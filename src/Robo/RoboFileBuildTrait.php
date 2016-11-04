@@ -2,11 +2,15 @@
 
 namespace Partridge\Utils\Robo;
 
+use Partridge\Utils\Robo\Task\loadTasks;
+
 /**
  * Segregates the robo tasks concerned with packaging and building of repo projects
+ *
  */
 trait RoboFileBuildTrait {
 
+  use loadTasks;
 
   /**
    * Dev task to merge Dirty branch into Dev and handle additional things such as versioning numbers
@@ -21,10 +25,14 @@ trait RoboFileBuildTrait {
       throw new \Exception("You must be on the branch 'dirty'");
     }
 
-    $result = $this->taskSemVer('.semver')
+    $result = $this->taskUtilsSemVer('.semver')
                    ->increment('patch')
                    ->run()
     ;
+//    $result = $this->taskSemVer('.semver')
+//                   ->increment('patch')
+//                   ->run()
+//    ;
     if (!$result->wasSuccessful()) {
       throw new \Exception("Bad semver file");
     }

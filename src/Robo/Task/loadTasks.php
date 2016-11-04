@@ -9,10 +9,11 @@ trait loadTasks
 
   /**
    * http://robo.li/extending/
-   * @return mixed
+   * @param string $pathToSemVer
+   * @return SemVer
    */
-  protected function taskUtilSemVer() {
-
-    return $this->task(__FUNCTION__);
+  protected function taskUtilsSemVer($pathToSemVer = '.semver')
+  {
+    return $this->task(UtilsSemVer::class, $pathToSemVer);
   }
 }
