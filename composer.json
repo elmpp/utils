@@ -1,0 +1,20 @@
+{
+    "name": "partridge/utils",
+    "description": "common code across projects",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "matt penrice",
+            "email": "matthew.penrice@gmail.com"
+        }
+    ],
+    "require": {
+        "codegyre/robo": "^0.7.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Partridge\\Utils\\": "src/"
+        }
+    }
+}
