@@ -13,6 +13,7 @@ trait RoboFileTrait {
     // base
     'php-cli'    => 'php-cli',
     'php-apache' => 'php-apache',
+    'php-apache-api' => 'php-apache-api',
     'node'       => 'node',
   ];
 
