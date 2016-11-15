@@ -61,7 +61,7 @@ trait RoboFileBuildTrait {
     $packagerContainer = 'packager-' . $packageType;
 
     if ($packageType == 'api') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['php-apache'] . ':latest';
+      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['php-apache-api'] . ':latest';
       $containerDocRoot = '/var/www/html';
       $containerCmd     = 'CMD ["apache2-foreground"]';
       $runAsUser        = 'www-data';
