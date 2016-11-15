@@ -104,7 +104,10 @@ trait RoboFileTrait {
   }
 
   protected function isLocalDevMachine() {
-    return (false !== stristr(gethostname(), 'Matthews-iMac') || false !== stristr(gethostname(), 'matts-MBP'));
+    return (false !== stristr(gethostname(), 'Matthews-iMac')
+      || false !== stristr(gethostname(), 'matts-MBP')
+      || false !== stristr(gethostname(), 'matts-MacBook-Pro.local')
+      );
   }
 
   protected function getCurrentGitBranch() {
