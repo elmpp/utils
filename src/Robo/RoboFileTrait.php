@@ -2,6 +2,8 @@
 
 namespace Partridge\Utils\Robo;
 
+use ImporterBundle\Util\Util;
+
 trait RoboFileTrait {
 
   protected $registries = [];
@@ -105,10 +107,8 @@ trait RoboFileTrait {
   }
 
   protected function isLocalDevMachine() {
-    return (false !== stristr(gethostname(), 'Matthews-iMac')
-      || false !== stristr(gethostname(), 'matts-MBP')
-      || false !== stristr(gethostname(), 'matts-MacBook-Pro.local')
-      );
+
+    return Util::isLocalDevMachine();
   }
 
   protected function getCurrentGitBranch() {
