@@ -22,10 +22,6 @@ trait RoboFileSeleniumTrait {
       throw new TaskException("Selenium jar expected at " . $this->seleniumJar);
     }
     $this->systemProcessGrep('[s]elenium.*.jar', true);
-
-    if (false !== strripos($seleniumVersion, '2.5')) {
-      $this->yell("Firefox v46 or earlier requred if running locally via selenium builder!", 40, 'red');
-    }
   }
 
   /**
@@ -52,7 +48,7 @@ trait RoboFileSeleniumTrait {
     }
 
     $collection->run();
-    sleep(2);
+    sleep(8);
   }
 
   public function testMe($background = false) {
@@ -91,7 +87,8 @@ done > /tmp/yestest");
       $this->say("Starting grid node with browser instances ${node}");
       $collection->arg('-role node');
       $collection->arg('-hub http://localhost:4444/grid/register');
-      $collection->arg("-browser browserName=firefox,maxInstances=${node},platform=MAC");
+//      $collection->arg("-browser browserName=firefox,maxInstances=${node},platform=MAC");
+      $collection->arg("-browser browserName=firefox,maxInstances=${node} -browser browserName=phantomjs,maxInstances=${node} -browser browserName=chrome,maxInstances=${node} -log /var/log/selenium.log");
     }
 //    elseif ($node) {
 //      $this->say("Starting grid node number ${node}");

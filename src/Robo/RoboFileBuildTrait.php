@@ -29,16 +29,13 @@ trait RoboFileBuildTrait {
                    ->increment('patch')
                    ->run()
     ;
-//    $result = $this->taskSemVer('.semver')
-//                   ->increment('patch')
-//                   ->run()
-//    ;
     if (!$result->wasSuccessful()) {
       throw new \Exception("Bad semver file");
     }
 
     return $this->taskGitStack()
                 ->stopOnFail(true)
+                ->addCode(function() { return $this->testAll(); })
                 ->add('.semver')
                 ->commit("Bumps .semver")
                 ->push()
