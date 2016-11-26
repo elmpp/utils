@@ -41,7 +41,7 @@ trait RoboFileBuildTrait {
          ->printed(true)
       ;
     }
-    if (!$opts['unit-only']) {
+    if ($opts['unit-only']) {
       $coll->addCode( function() { return $this->testUnit(); });
     }
     else {
