@@ -13,68 +13,37 @@ trait RoboFileTestTrait {
   }
 
   /**
-   * Runs the integration tests
-   */
-  public function testIntegration() {
-
-    $this->wiremockRun(true);
-    sleep(3);
-    $res = $this->taskPhpUnit()
-                ->files($this->getTestSrcDir() . '/ONC/Test/Integration')
-                ->printed(true)
-                ->run()
-    ;
-    $this->wiremockKill();
-    return $res;
-  }
-
-  /**
    * Runs the unit tests
    */
-  public function testUnit() {
+  public function doTestUnit($path = null) {
 
     return $this->taskPhpUnit()
-                ->files($this->getTestSrcDir() . '/ONC/Test/Partridge')
-                ->printed(true)
-                ->run()
-      ;
-  }
-
-  /**
-   * Runs the selenium tests
-   */
-  public function testSelenium($parallel = 5) {
-
-    return $this->collectionBuilder()
-      ->addCode(function() { return $this->seleniumRun(true, 15); })
-      ->taskParaTest($parallel)
-        ->files($this->getTestSrcDir() . '/Selenium/BaseSeleniumTestCase.php')
-        ->functional(true)
-        ->wrapperRunner(true)
-        ->printed(true)
+      ->files($path)
+      ->printed(true)
       ->run()
     ;
   }
 
   /**
-   * Runs Unit and Integration test
+   * Runs the selenium tests
+   * These realised as node [nightwatch] scripts
    */
-  public function testAll($env = 'test') {
+  protected function doTestSelenium($projectName = null, $platform = 'local') {
 
-    $col = $this->collectionBuilder();
-    $col
-      ->taskExec('bin/console doctrine:database:create')
-      ->option('env', $env)
-      ->option('if-not-exists')
-      ->printed(true)
-      ->addCode(function(){ return $this->testSelenium(); })
-      ->addCode(function(){ return $this->testUnit(); })
-      ->addCode(function(){ return $this->testIntegration(); })
-      ;
-    return $col->run();
+    // the "partridge/testing" composer package should have been pulled in by composer
+    $testingDir = $this->getCurrentProjectDir() . '/vendor/partridge/testing';
+
+    $res = $this->collectionBuilder()
+      ->taskExec("npm install")
+        ->dir($testingDir)
+        ->printed(true)
+      ->taskExec("npm run ${projectName}:${platform}")
+        ->dir($testingDir)
+        ->printed(true)
+//      ->option('tag', 'smoke')
+      ->run()
+    ;
+
+    return $res;
   }
-
-
-
-
 }

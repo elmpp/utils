@@ -11,6 +11,7 @@ trait RoboFileSeleniumTrait {
 
   protected $seleniumJar;
 
+
   protected function setupSelenium() {
 
 //    $this->seleniumJar = getcwd() . '/devDependencies/selenium-standalone-3.0.1.jar';
@@ -39,9 +40,6 @@ trait RoboFileSeleniumTrait {
     if ($runGrid) {
       $this->doSeleniumRun($collection, true, 0, $background);
       $this->doSeleniumRun($collection, false, $nodes, $background);
-//      for ($i=1; $i<=$nodes; $i++) {
-//        $this->doSeleniumRun($collection, false, $i, $background);
-//      }
     }
     else {
       $this->doSeleniumRun($collection, false, 0, $background);
@@ -51,18 +49,7 @@ trait RoboFileSeleniumTrait {
     sleep(8);
   }
 
-  public function testMe($background = false) {
-    $task = $this->taskExec("while true; do
-  echo \"0\"
-  sleep 1
-done > /tmp/yestest");
-    if ($background) {
-      $task->background(true);
-    }
-    $task->run();
-  }
-
-  protected function doSeleniumRun($collection, $isHub = false, $node = 0, $background = false) {
+  protected function doSeleniumRun($collection, $isHub = false, $browserInstances = 0, $background = false) {
 
     $collection
       ->taskExec('java -jar ' . $this->seleniumJar)
@@ -72,7 +59,6 @@ done > /tmp/yestest");
     if ($background) {
       $collection
         ->background(true)
-//        ->idleTimeout(30)
         ->arg(' &> /tmp/selenium')
 //        ->option(' -debug')
       ;
@@ -83,26 +69,16 @@ done > /tmp/yestest");
       $collection->arg('-role hub');
       sleep(3);
     }
-    elseif ($node) {
-      $this->say("Starting grid node with browser instances ${node}");
+    elseif ($browserInstances) {
+      $this->say("Starting grid node with browser instances ${browserInstances}");
       $collection->arg('-role node');
       $collection->arg('-hub http://localhost:4444/grid/register');
-//      $collection->arg("-browser browserName=firefox,maxInstances=${node},platform=MAC");
-      $collection->arg("-browser browserName=firefox,maxInstances=${node} -browser browserName=phantomjs,maxInstances=${node} -browser browserName=chrome,maxInstances=${node} -log /var/log/selenium.log");
+      $collection->arg("-browser browserName=firefox,maxInstances=${browserInstances} -browser browserName=phantomjs,maxInstances=${browserInstances} -browser browserName=chrome,maxInstances=${browserInstances} -log /var/log/selenium.log");
     }
-//    elseif ($node) {
-//      $this->say("Starting grid node number ${node}");
-//      $collection->arg('-role node');
-//      $collection->arg('-hub http://localhost:4444/grid/register');
-//    }
     else {
       $this->yell("Starting selenium server. Version " . basename($this->seleniumJar) . " ( Address: http://localhost:4444 )");
     }
 
     return $collection;
-
-//    $collection->run();
-
-//    sleep(5);
   }
 }

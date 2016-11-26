@@ -7,12 +7,21 @@ use ImporterBundle\Util\Util;
 trait RoboFileTrait {
 
   /**
-   * Includes cross-project can be confusing
+   * Includes when used cross-project can be confusing
    * @return string
    */
   protected function getCurrentProjectDir() {
 
     return substr(realpath($_SERVER["SCRIPT_FILENAME"]), 0, stripos(realpath($_SERVER["SCRIPT_FILENAME"]), '/robo'));
+  }
+
+  /**
+   * Sometimes we need to know which project we're in
+   * @return string
+   */
+  protected function getCurrentProjectName() {
+
+    return basename(substr(realpath($_SERVER["SCRIPT_FILENAME"]), 0, stripos(realpath($_SERVER["SCRIPT_FILENAME"]), '/robo')));
   }
 
   protected function isLocalDevMachine() {

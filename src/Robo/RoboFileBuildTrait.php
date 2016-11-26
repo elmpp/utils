@@ -2,6 +2,7 @@
 
 namespace Partridge\Utils\Robo;
 
+use ImporterBundle\Util\Util;
 use Partridge\Utils\Robo\Task\loadTasks;
 
 /**
@@ -101,4 +102,42 @@ trait RoboFileBuildTrait {
       ->stopOnFail()
     ;
   }
+
+  /**
+   * Hits up Shippable and triggers a build of the testing repository for selenium stuff
+   * Ideal for calling after a deployment on GKE or wherever
+   *
+   * http://docs.shippable.com/api/overview/
+   */
+  public function shippableBuildTesting() {
+
+    $url  = "https://api.shippable.com/projects/58398d0183cb0511001841ab/newBuild";
+    $ch = curl_init();
+
+    $shippableApiToken = getenv('SYMFONY__SHIPPABLEAPITOKEN');
+    if (!$shippableApiToken) {
+      throw new \RuntimeException("Cannot trigger shippable build without token set as env variable at 'SYMFONY__SHIPPABLEAPITOKEN'");
+    }
+
+    $headers = [
+      "Authorization: apiToken ${shippableApiToken}"
+    ];
+
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch,CURLOPT_URL, $url);
+    curl_setopt($ch,CURLOPT_POSTFIELDS, []);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $rawRes = @curl_exec($ch);
+    if (!$res = json_decode($rawRes, true)) {
+      throw new \RuntimeException("Could not json decode the response. Raw: " . Util::consolePrint($rawRes));
+    }
+
+    $this->say("Shippable build triggered at https://app.shippable.com/runs/${res['runId']}/1/console");
+
+    //close connection
+    curl_close($ch);
+
+  }
+
 }
