@@ -35,12 +35,12 @@ trait RoboFileBuildTrait {
     }
 
     return $this->collectionBuilder()
-      ->stopOnFail(true)
       ->taskComposerUpdate()
         ->arg('partridge/utils') // makes sure composer.lock has latest proper utils
         ->printed(true)
       ->addCode(function() { return $this->testAll(); })
       ->taskGitStack()
+        ->stopOnFail(true)
         ->add('.semver')
         ->commit("Bumps .semver")
         ->push()
