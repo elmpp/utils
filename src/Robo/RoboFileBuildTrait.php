@@ -34,18 +34,22 @@ trait RoboFileBuildTrait {
       throw new \Exception("Bad semver file");
     }
 
-    return $this->taskGitStack()
-                ->stopOnFail(true)
-                ->addCode(function() { return $this->testAll(); })
-                ->add('.semver')
-                ->commit("Bumps .semver")
-                ->push()
-                ->checkout('dev')
-                ->merge('dirty')
-                ->push()
-                ->checkout('dirty')
-                ->run()
-      ;
+    return $this->collectionBuilder()
+      ->stopOnFail(true)
+      ->taskComposerUpdate()
+        ->arg('partridge/utils') // makes sure composer.lock has latest proper utils
+        ->printed(true)
+      ->addCode(function() { return $this->testAll(); })
+      ->taskGitStack()
+        ->add('.semver')
+        ->commit("Bumps .semver")
+        ->push()
+        ->checkout('dev')
+        ->merge('dirty')
+        ->push()
+        ->checkout('dirty')
+      ->run()
+    ;
   }
 
   /**
