@@ -3,6 +3,8 @@
 namespace Partridge\Utils\Robo;
 
 use ImporterBundle\Util\Util;
+use Robo\Exception\TaskException;
+use Robo\Result;
 
 trait RoboFileTrait {
 
@@ -36,31 +38,25 @@ trait RoboFileTrait {
     return $currentBranch;
   }
 
-  protected function systemProcessGrep($egrep, $kill = false) {
+  protected function systemProcessGrep($egrep, $killOrIgnore = false) {
 
     $res = $this->taskExec("ps -ef | egrep -i '${egrep}' | awk '{print $2}'")  # http://stackoverflow.com/a/3510850/2968327
       ->run()
     ;
     $processId = intval(trim($res->getOutputData()));
-//var_dump($processId); die;
+
     if ($processId != 0) {
-      if ($kill) {
-//        $this->say("Found existing process for grep ${egrep}. Killing process(es) id: ${processId}");
+      if (is_null($killOrIgnore)) { return; }
+      if ($killOrIgnore !== false) {
         $this->say("Found existing process for grep ${egrep}");
         $res = $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  # http://stackoverflow.com/a/3510850/2968327
           ->printed(true)
           ->run()
         ;
-//        $this->_exec("kill -9 ${processId}");
-//        $this->taskExec("echo ${processId} | xargs kill -9")
-//        $this->taskExec("echo ${processId} | xargs echo")
-//        $this->taskExec("cat ${processId} | xargs kill -9")
-//          ->printed(true)
-//          ->run()
-//        ;
+        sleep(2);
       }
       else {
-        throw new \Exception("Process grepped via '${egrep}' is already running at process(es) id: ${processId}");
+        throw new TaskException($this, "Process grepped via '${egrep}' is already running at process(es) id: ${processId}");
       }
     }
   }
