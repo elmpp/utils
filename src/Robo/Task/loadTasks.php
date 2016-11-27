@@ -28,4 +28,13 @@ trait loadTasks
   {
     return $this->task(ParaTest::class, $processes, $wrapperRunner);
   }
+
+  /**
+   * @param string $pathToPhpUnit
+   * @return PartridgePHPUnit
+   */
+  protected function taskPartridgePHPUnit($pathToPhpUnit = null)
+  {
+    return $this->task(PartridgePHPUnit::class, $pathToPhpUnit);
+  }
 }
