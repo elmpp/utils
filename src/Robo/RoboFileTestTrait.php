@@ -40,7 +40,6 @@ trait RoboFileTestTrait {
       ->taskExec("npm run ${projectName}:${platform}")
         ->dir($testingDir)
         ->printed(true)
-//      ->option('tag', 'smoke')
       ->run()
     ;
 
