@@ -2,9 +2,8 @@
 
 namespace Partridge\Utils\Robo;
 
-use ImporterBundle\Util\Util;
+use Partridge\Utils\Util;
 use Robo\Exception\TaskException;
-use Robo\Result;
 
 trait RoboFileTrait {
 

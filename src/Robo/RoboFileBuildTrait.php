@@ -2,8 +2,8 @@
 
 namespace Partridge\Utils\Robo;
 
-use ImporterBundle\Util\Util;
 use Partridge\Utils\Robo\Task\loadTasks;
+use Partridge\Utils\Util;
 
 /**
  * Segregates the robo tasks concerned with packaging and building of repo projects
@@ -143,8 +143,8 @@ trait RoboFileBuildTrait {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
     $rawRes = @curl_exec($ch);
-    if (!$res = json_decode($rawRes, true)) {
-      throw new \RuntimeException("Could not json decode the response. Raw: " . Util::consolePrint($rawRes));
+    if (!$res = json_decode($rawRes, true) || !isset($res['runId'])) {
+      throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
     }
 
     $this->say("Shippable build triggered at https://app.shippable.com/runs/${res['runId']}/1/console");
