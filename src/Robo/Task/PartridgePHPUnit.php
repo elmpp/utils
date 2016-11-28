@@ -56,7 +56,6 @@ class PartridgePHPUnit extends PHPUnit
     public function getCommand()
     {
         $phpunitOnly = preg_replace('/^php\s(.*)$/', '$1', $this->command);
-var_dump($this->command, $phpunitOnly);
         return sprintf("%s%s%s", $phpunitOnly, $this->arguments, $this->dir);
     }
 
