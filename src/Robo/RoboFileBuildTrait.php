@@ -20,10 +20,10 @@ trait RoboFileBuildTrait {
    *  (to bump major/minor, a separate commit should be done beforehand)
    *
    */
-  public function buildMergeDev($opts = ['no-composer' => false, 'unit-only' => false]) {
+  public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false]) {
 
     if ($this->getCurrentGitBranch() != 'dirty') {
-      throw new \Exception("You must be on the branch 'dirty'");
+      throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'");
     }
 
     $result = $this->taskUtilsSemVer('.semver')
@@ -31,21 +31,22 @@ trait RoboFileBuildTrait {
                    ->run()
     ;
     if (!$result->wasSuccessful()) {
-      throw new \Exception("Bad semver file");
+      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
     }
 
     $coll = $this->collectionBuilder();
     if (!$opts['no-composer']) {
       $coll->taskComposerUpdate()
-         ->arg('partridge/utils') // makes sure composer.lock has latest proper utils
+         ->arg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
+         ->arg('partridge/testing')
          ->printed(true)
       ;
     }
-    if ($opts['unit-only']) {
-      $coll->addCode( function() { return $this->testUnit(); });
+    if ($opts['quick']) {
+      $coll->addCode( function() { $this->testQuick(); });
     }
     else {
-      $coll->addCode( function() { return $this->testAll(); });
+      $coll->addCode( function() { $this->testAll(); });
     }
     return $coll
       ->taskGitStack()
