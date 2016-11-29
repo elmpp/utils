@@ -144,7 +144,7 @@ trait RoboFileBuildTrait {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
     $rawRes = @curl_exec($ch);
-    if (!$res = json_decode($rawRes, true) || !isset($res['runId'])) {
+    if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
       throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
     }
 
