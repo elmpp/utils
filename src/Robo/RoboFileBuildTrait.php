@@ -48,6 +48,11 @@ trait RoboFileBuildTrait {
     else {
       $coll->addCode( function() { $this->testAll(); });
     }
+
+    if (is_callable([$this, 'doBuildMergeDev'])) {
+      $coll->addCode( function() { $this->doBuildMergeDev(); });
+    }
+
     return $coll
       ->taskGitStack()
         ->stopOnFail(true)
