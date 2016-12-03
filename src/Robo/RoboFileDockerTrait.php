@@ -2,7 +2,6 @@
 
 namespace Partridge\Utils\Robo;
 
-use ImporterBundle\Util\Util;
 
 trait RoboFileDockerTrait {
 
