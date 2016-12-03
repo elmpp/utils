@@ -22,6 +22,8 @@ trait RoboFileBuildTrait {
    */
   public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false]) {
 
+    $this->stopOnFail(true);
+
     if ($this->getCurrentGitBranch() != 'dirty') {
       throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'");
     }
