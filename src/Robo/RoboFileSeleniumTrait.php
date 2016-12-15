@@ -20,7 +20,7 @@ trait RoboFileSeleniumTrait {
     $seleniumVersion = basename($this->seleniumJar);
 
     if (!is_readable($this->seleniumJar)) {
-      throw new TaskException("Selenium jar expected at " . $this->seleniumJar);
+      throw new TaskException(__CLASS__, "Selenium jar expected at " . $this->seleniumJar);
     }
     $this->systemProcessGrep('[s]elenium.*.jar', true);
   }

@@ -12,7 +12,7 @@ trait RoboFileDockerTrait {
     'importer'   => 'importer',
     'frontend'   => 'frontend',
     // base
-    'php-cli'    => 'php-cli',
+    'php-cli'    => 'php-cli2',
     'php-apache' => 'php-apache',
     'php-apache-api' => 'php-apache-api',
     'node'       => 'node',

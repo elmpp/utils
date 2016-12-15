@@ -22,6 +22,8 @@ trait RoboFileBuildTrait {
    */
   public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false]) {
 
+    $this->stopOnFail(true);
+
     if ($this->getCurrentGitBranch() != 'dirty') {
       throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'");
     }
@@ -38,7 +40,7 @@ trait RoboFileBuildTrait {
     if (!$opts['no-composer']) {
       $coll->taskComposerUpdate()
          ->arg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
-         ->arg('partridge/testing')
+//         ->arg('partridge/testing') // does not matter if out of sync
          ->printed(true)
       ;
     }
@@ -48,6 +50,11 @@ trait RoboFileBuildTrait {
     else {
       $coll->addCode( function() { $this->testAll(); });
     }
+
+    if (is_callable([$this, 'doBuildMergeDev'])) {
+      $coll->addCode( function() { $this->doBuildMergeDev(); });
+    }
+
     return $coll
       ->taskGitStack()
         ->stopOnFail(true)
@@ -144,7 +151,7 @@ trait RoboFileBuildTrait {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
     $rawRes = @curl_exec($ch);
-    if (!$res = json_decode($rawRes, true) || !isset($res['runId'])) {
+    if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
       throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
     }
 
