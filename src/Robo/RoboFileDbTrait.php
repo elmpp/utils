@@ -27,6 +27,24 @@ trait RoboFileDbTrait {
   }
 
   /**
+   * Drop and creates db
+   */
+  public function dbEmpty($env = 'test') {
+
+    $this->taskExec('bin/console doctrine:database:drop')
+          ->printed(true)
+          ->option('env', $env)
+          ->option('force')
+          ->option('if-exists')
+        ->taskExec('bin/console doctrine:database:create')
+          ->printed(true)
+          ->option('env', $env)
+          ->option('if-not-exists')
+        ->run()
+    ;
+  }
+
+  /**
    * Loads into the db for the env param supplied from file with name supplied (from fixtures_dir)
    * @param string $env
    * @param string $filename
