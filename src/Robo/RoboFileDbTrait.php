@@ -17,7 +17,9 @@ trait RoboFileDbTrait {
    */
   public function dbDump($filename = '', $env = 'test') {
 
-    $this->taskExec('bin/console import:dbfixtures')
+    $coll = $this->collectionBuilder();
+    $coll
+      ->taskExec('bin/console import:dbfixtures')
          ->option('env', $env)
          ->arg('dump')
          ->arg($filename)
@@ -31,16 +33,25 @@ trait RoboFileDbTrait {
    */
   public function dbEmpty($env = 'test') {
 
-    $this->taskExec('bin/console doctrine:database:drop')
-          ->printed(true)
-          ->option('env', $env)
-          ->option('force')
-          ->option('if-exists')
-        ->taskExec('bin/console doctrine:database:create')
-          ->printed(true)
-          ->option('env', $env)
-          ->option('if-not-exists')
-        ->run()
+    $collection = $this->collectionBuilder();
+    $collection
+      ->taskExec('bin/console doctrine:database:create')
+      ->option('env', $env)
+      ->option('if-not-exists')
+      // required as dropping db with other connections won't be allowed
+      // actually disallows access to the database for other connections
+      // which is necessary as local persistent terminals reconnect
+      // and break further queries in this collection (probably cause it takes a while)
+      ->taskExec('bin/console import:pgsql_users')
+      ->option('env', $env)
+      ->printed(true)
+      ->taskExec('bin/console doctrine:database:drop')
+      ->option('env', $env)
+      ->option('if-exists')
+      ->option('force')
+      ->taskExec('bin/console doctrine:database:create')
+      ->option('env', $env)
+      ->run()
     ;
   }
 
