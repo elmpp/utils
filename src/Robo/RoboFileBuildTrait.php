@@ -44,15 +44,15 @@ trait RoboFileBuildTrait {
          ->printed(true)
       ;
     }
+    if (is_callable([$this, 'doBuildMergeDev'])) {
+      $coll->addCode( function() use ($opts) { $this->doBuildMergeDev($opts); });
+    }
+
     if ($opts['quick']) {
       $coll->addCode( function() { $this->testQuick(); });
     }
     else {
       $coll->addCode( function() { $this->testAll(); });
-    }
-
-    if (is_callable([$this, 'doBuildMergeDev'])) {
-      $coll->addCode( function() use ($opts) { $this->doBuildMergeDev($opts); });
     }
 
     return $coll
