@@ -52,7 +52,7 @@ trait RoboFileBuildTrait {
     }
 
     if (is_callable([$this, 'doBuildMergeDev'])) {
-      $coll->addCode( function() { $this->doBuildMergeDev(); });
+      $coll->addCode( function() use ($opts) { $this->doBuildMergeDev($opts); });
     }
 
     return $coll
