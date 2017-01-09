@@ -30,6 +30,11 @@ trait RoboFileTrait {
     return Util::isLocalDevMachine();
   }
 
+  protected function getCurrentExecutingUser() {
+
+    return exec('whoami');
+  }
+
   protected function getCurrentGitBranch() {
 
     $currentBranch = $this->taskExec('git rev-parse --abbrev-ref HEAD')->run();
