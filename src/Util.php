@@ -15,6 +15,7 @@ class Util {
     return (false !== stristr(gethostname(), 'Matthews-iMac')
       || false !== stristr(gethostname(), 'matts-MBP')
       || false !== stristr(gethostname(), 'matts-MacBook-Pro.local')
+      || false !== getenv('SYMFONY__IS_LOCAL_MACHINE')
     );
   }
 
@@ -40,5 +41,4 @@ class Util {
     );
     return $output;
   }
-
 }
