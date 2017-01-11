@@ -31,7 +31,7 @@ trait RoboFileSeleniumTrait {
    * http://www.seleniumhq.org/docs/07_selenium_grid.jsp
    * http://elementalselenium.com/tips/52-grid
    */
-  public function seleniumRun($background = false, $nodes = 1) {
+  public function seleniumRun($background = true, $nodes = 1) {
 
     $this->setupSelenium();
 
