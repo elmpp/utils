@@ -15,13 +15,16 @@ trait RoboFileTestTrait {
   /**
    * Runs the unit tests
    */
-  public function doTestUnit($path = null) {
+  public function doTestUnit($path = null, $opts = ['debug' => false, 'stop-on-fail' => true]) {
 
-    return $this->taskPhpUnit()
+    $task = $this->taskPhpUnit()
       ->files($path)
       ->printed(true)
-      ->run()
     ;
+    if ($opts['stop-on-fail']) {
+      $task->option('stop-on-fail');
+    }
+    return $task->run();
   }
 
   /**
