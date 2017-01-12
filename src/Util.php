@@ -19,6 +19,11 @@ class Util {
     );
   }
 
+  public static function isLiveMachine() {
+
+    return (false !== getenv('SYMFONY__IS_LIVE_MACHINE'));
+  }
+
   /**
    * Gives a console-printable view
    * @param mixed $var
