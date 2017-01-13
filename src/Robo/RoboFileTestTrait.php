@@ -3,6 +3,8 @@
 namespace Partridge\Utils\Robo;
 
 
+use Partridge\Utils\Util;
+
 trait RoboFileTestTrait {
 
 
@@ -21,6 +23,9 @@ trait RoboFileTestTrait {
       ->files($path)
       ->printed(true)
     ;
+    if (!Util::isLocalDevMachine()) {
+      $task->option('exclude-group', 'localonly');
+    }
     if ($opts['stop-on-fail']) {
       $task->option('stop-on-fail');
     }
