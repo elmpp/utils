@@ -96,4 +96,5 @@ trait RoboFileDockerTrait {
     }
     return $this->registries[self::REGISTRY_GCR];
   }
+
 }
