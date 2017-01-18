@@ -62,7 +62,7 @@ trait RoboFileDbTrait {
    */
   public function dbLoad($filename = '', $env = 'test') {
 
-    if ($filename = 'live') {
+    if ($filename == 'live') {
       $this->dbLiveSync(null, 'partridge');
       return;
     }
