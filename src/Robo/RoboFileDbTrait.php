@@ -62,6 +62,11 @@ trait RoboFileDbTrait {
    */
   public function dbLoad($filename = '', $env = 'test') {
 
+    if ($filename = 'live') {
+      $this->dbLiveSync(null, 'partridge');
+      return;
+    }
+
     return $this->collectionBuilder()
                 ->taskExec('bin/console doctrine:database:create')
                 ->option('if-not-exists')
