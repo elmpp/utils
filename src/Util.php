@@ -25,6 +25,20 @@ class Util {
   }
 
   /**
+   * Consults environment variables for a variable value
+   * @param      $env
+   * @param null $default
+   * @return null|string
+   */
+  public static function getEnv($env, $default = null) {
+
+    if (false === ($value = getenv($env))) {
+      return $default;
+    }
+    return $value;
+  }
+
+  /**
    * Gives a console-printable view
    * @param mixed $var
    */
