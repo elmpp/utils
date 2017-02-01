@@ -19,6 +19,10 @@ trait RoboSymfonyTrait {
         ->option('env', 'dev')
         ->option('no-warmup')
         ->printed(true)
+      ->taskExec('bin/console cache:clear')
+        ->option('env', 'test')
+        ->option('no-warmup')
+        ->printed(true)
       ->addCode(function() { $this->apcuClear(); })
       ->run()
     ;
