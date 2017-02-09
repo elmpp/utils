@@ -20,7 +20,7 @@ trait RoboFileBuildTrait {
    *  (to bump major/minor, a separate commit should be done beforehand)
    *
    */
-  public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false]) {
+  public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false, 'super-quick' => false]) {
 
     $this->stopOnFail(true);
 
@@ -48,11 +48,13 @@ trait RoboFileBuildTrait {
       $coll->addCode( function() use ($opts) { $this->doBuildMergeDev($opts); });
     }
 
-    if ($opts['quick']) {
-      $coll->addCode( function() { $this->testQuick(); });
-    }
-    else {
-      $coll->addCode( function() { $this->testAll(); });
+    if (!$opts['super-quick']) {
+      if ($opts['quick']) {
+        $coll->addCode( function() { $this->testQuick(); });
+      }
+      else {
+        $coll->addCode( function() { $this->testAll(); });
+      }
     }
 
     return $coll
