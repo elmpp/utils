@@ -3,6 +3,7 @@
 namespace Partridge\Utils\Robo;
 
 
+use ImporterBundle\Util\ArrayUtil;
 use Partridge\Utils\Util;
 
 trait RoboFileTestTrait {
@@ -17,19 +18,26 @@ trait RoboFileTestTrait {
   /**
    * Runs the unit tests
    */
-  public function doTestUnit($path = null, $opts = ['debug' => false, 'stop-on-fail' => true]) {
+  public function doTestUnit($dir = null, $opts = ['debug' => false, 'stop-on-fail' => true]) {
 
-    $task = $this->taskPhpUnit()
-      ->files($path)
-      ->printed(true)
-    ;
-    if (!Util::isLocalDevMachine()) {
-      $task->option('exclude-group', 'localonly');
+    $dir = ArrayUtil::arrayCast($dir);
+
+    $coll = $this->collectionBuilder();
+    foreach ($dir as $aDir) {
+      $coll
+        ->taskPhpUnit()
+          ->files($aDir)
+          ->printed(true)
+      ;
+      $coll->option('exclude-group', 'apiLiveDataCall');
+      if (!Util::isLocalDevMachine()) {
+        $coll->option('exclude-group', 'localonly');
+      }
+      if ($opts['stop-on-fail']) {
+        $coll->option('stop-on-fail');
+      }
     }
-    if ($opts['stop-on-fail']) {
-      $task->option('stop-on-fail');
-    }
-    return $task->run();
+    return $coll->run();
   }
 
   /**
