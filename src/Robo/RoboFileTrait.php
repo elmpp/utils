@@ -13,7 +13,8 @@ trait RoboFileTrait {
    */
   protected function getCurrentProjectDir() {
 
-    return substr(realpath($_SERVER["SCRIPT_FILENAME"]), 0, stripos(realpath($_SERVER["SCRIPT_FILENAME"]), '/robo'));
+    return Util::getProjectRoot();
+//    return substr(realpath($_SERVER["SCRIPT_FILENAME"]), 0, stripos(realpath($_SERVER["SCRIPT_FILENAME"]), '/robo'));
   }
 
   /**

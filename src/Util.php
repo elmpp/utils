@@ -39,6 +39,27 @@ class Util {
   }
 
   /**
+   * Attempts to find the project root without use of Parameters/Container
+   *  - assumes a project with a base composer.json file
+   *  - assumes a project with a base phpunit.xml.dist file
+   * @return string
+   */
+  public static function getProjectRoot() {
+
+    $currentDir = realpath(dirname(__FILE__));
+
+    while (!in_array($currentDir, ['/', '.'])) {
+      if (
+        is_file("${currentDir}/composer.json")
+        && is_file("${currentDir}/phpunit.xml.dist")
+      ) {
+        return $currentDir;
+      }
+      $currentDir = dirname($currentDir);
+    }
+  }
+
+  /**
    * Gives a console-printable view
    * @param mixed $var
    */
