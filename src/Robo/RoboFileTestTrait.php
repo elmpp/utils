@@ -18,7 +18,7 @@ trait RoboFileTestTrait {
   /**
    * Runs the unit tests
    */
-  public function doTestUnit($dir = null, $opts = ['debug' => false, 'stop-on-fail' => true]) {
+  public function doTestUnit($dir = null, $opts = ['debug' => false, 'stop-on-fail' => true, 'results-output' => false, 'coverage-output' => false]) {
 
     $dir = ArrayUtil::arrayCast($dir);
 
@@ -34,6 +34,12 @@ trait RoboFileTestTrait {
         $coll->option('exclude-group', 'localonly');
       }
       if ($opts['stop-on-fail']) {
+        $coll->option('stop-on-fail');
+      }
+      if ($opts['results-output']) {
+        $coll->option('stop-on-fail');
+      }
+      if ($opts['results-output']) {
         $coll->option('stop-on-fail');
       }
     }
