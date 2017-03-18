@@ -22,6 +22,7 @@ trait RoboFileTestTrait {
 
     $dir = ArrayUtil::arrayCast($dir);
 
+    /** @var \Robo\Collection\CollectionBuilder $coll */
     $coll = $this->collectionBuilder();
     foreach ($dir as $aDir) {
       $coll
@@ -37,10 +38,10 @@ trait RoboFileTestTrait {
         $coll->option('stop-on-fail');
       }
       if ($opts['results-output']) {
-        $coll->option('stop-on-fail');
+        $coll->arg('log-junit', 'shippable/testresults/junit.xml');
       }
-      if ($opts['results-output']) {
-        $coll->option('stop-on-fail');
+      if ($opts['coverage-output']) {
+        $coll->arg('coverage-xml', 'shippable/codecoverage');
       }
     }
     return $coll->run();
