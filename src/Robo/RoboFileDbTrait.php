@@ -33,6 +33,9 @@ trait RoboFileDbTrait {
    */
   public function dbEmpty($env = 'test') {
 
+    $database = ($env == 'test') ? 'partridge_test' : 'partridge';
+    $postgresContainer = 'postgres';
+
     $collection = $this->collectionBuilder();
     $collection
       ->taskExec('bin/console doctrine:database:create')
@@ -45,15 +48,51 @@ trait RoboFileDbTrait {
       ->taskExec('bin/console import:pgsql_users')
       ->option('env', $env)
       ->printed(true)
-      ->taskExec('bin/console doctrine:database:drop')
-      ->option('env', $env)
-      ->option('if-exists')
-      ->option('force')
-      ->taskExec('bin/console doctrine:database:create')
-      ->option('env', $env)
+      ->taskDockerExec($postgresContainer)
+        ->interactive()
+        //          ->exec("psql -U postgres -c 'drop database if exists ${database};'")
+        ->exec("psql -U postgres ${database} -c 'drop schema if exists matview cascade;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'drop schema if exists public cascade;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'create schema if not exists matview;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'create schema if not exists public;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'SET search_path to public;'")
       ->run()
     ;
   }
+//  /**
+//   * Drop and creates db
+//   */
+//  public function dbEmpty($env = 'test') {
+//
+//    $collection = $this->collectionBuilder();
+//    $collection
+//      ->taskExec('bin/console doctrine:database:create')
+//      ->option('env', $env)
+//      ->option('if-not-exists')
+//      // required as dropping db with other connections won't be allowed
+//      // actually disallows access to the database for other connections
+//      // which is necessary as local persistent terminals reconnect
+//      // and break further queries in this collection (probably cause it takes a while)
+//      ->taskExec('bin/console import:pgsql_users')
+//      ->option('env', $env)
+//      ->printed(true)
+//      ->taskExec('bin/console doctrine:database:drop')
+//      ->option('env', $env)
+//      ->option('if-exists')
+//      ->option('force')
+//      ->taskExec('bin/console doctrine:database:create')
+//      ->option('env', $env)
+//      ->run()
+//    ;
+//  }
 
   /**
    * Loads into the db for the env param supplied from file with name supplied (from fixtures_dir)
