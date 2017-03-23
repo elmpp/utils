@@ -38,10 +38,10 @@ trait RoboFileTestTrait {
         $coll->option('stop-on-fail');
       }
       if ($opts['results-output']) {
-        $coll->arg('log-junit', 'shippable/testresults/junit.xml');
+        $coll->option('log-junit', 'shippable/testresults/junit.xml');
       }
       if ($opts['coverage-output']) {
-        $coll->arg('coverage-xml', 'shippable/codecoverage');
+        $coll->option('coverage-xml', 'shippable/codecoverage');
       }
     }
     return $coll->run();
