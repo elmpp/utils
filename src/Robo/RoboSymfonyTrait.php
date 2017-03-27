@@ -28,9 +28,12 @@ trait RoboSymfonyTrait {
     ;
   }
 
+  /**
+   * Should be run as root before dropping down into www-data
+   */
   public function symfonyFixPerms() {
 
-    $this->stopOnFail(true);
+//    $this->stopOnFail(true);
     $projectDir = $this->getCurrentProjectDir();
 
     $coll = $this->collectionBuilder();
@@ -39,8 +42,21 @@ trait RoboSymfonyTrait {
       ->taskFilesystemStack()
         ->chmod("${projectDir}/var/cache", 0774, 0002, true) // assumes www-data is in current/root user's groups
         ->chmod("${projectDir}/var/logs", 0774, 0002,  true)
-      ->run()
+        ->chmod("${projectDir}/etc/cachePerm", 0774, 0002,  true)
     ;
+
+    if (!Util::isLocalDevMachine()) {
+      $coll
+        ->chmod("/tmp/", 0774, 0002,  true)
+        ->chown("${projectDir}/var/cache",       "www-data", true)
+        ->chown("${projectDir}/var/logs",         "www-data", true)
+        ->chown("${projectDir}/etc/cachePerm",   "www-data", true)
+        ->chgrp("${projectDir}/var/cache",       "www-data", true)
+        ->chgrp("${projectDir}/var/logs",         "www-data", true)
+        ->chgrp("${projectDir}/etc/cachePerm",   "www-data", true)
+      ;
+    }
+    $coll->run();
   }
 
   public function apcuClear() {
