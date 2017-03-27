@@ -47,13 +47,14 @@ trait RoboSymfonyTrait {
 
     if (!Util::isLocalDevMachine()) {
       $coll
-        ->chmod("/tmp/", 0774, 0002,  true)
-        ->chown("${projectDir}/var/cache",       "www-data", true)
+        ->chmod("/tmp/", 0774, 0000,  true)
+        ->chown("/tmp",                           "www-data", true)
+        ->chown("${projectDir}/var/cache",        "www-data", true)
         ->chown("${projectDir}/var/logs",         "www-data", true)
-        ->chown("${projectDir}/etc/cachePerm",   "www-data", true)
-        ->chgrp("${projectDir}/var/cache",       "www-data", true)
+        ->chown("${projectDir}/etc/cachePerm",    "www-data", true)
+        ->chgrp("${projectDir}/var/cache",        "www-data", true)
         ->chgrp("${projectDir}/var/logs",         "www-data", true)
-        ->chgrp("${projectDir}/etc/cachePerm",   "www-data", true)
+        ->chgrp("${projectDir}/etc/cachePerm",    "www-data", true)
       ;
     }
     $coll->run();
