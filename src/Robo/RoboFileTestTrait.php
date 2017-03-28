@@ -30,7 +30,6 @@ trait RoboFileTestTrait {
           ->files($aDir)
           ->printed(true)
       ;
-      $coll->option('exclude-group', 'apiLiveDataCall');
       if (!Util::isLocalDevMachine()) {
         $coll->option('exclude-group', 'localonly');
       }
