@@ -62,6 +62,7 @@ trait RoboFileBuildTrait {
       ->taskGitStack()
         ->stopOnFail(true)
         ->add('.semver')
+        ->add('.semver.plain')
         ->add('composer.lock')
         ->commit("Bumps .semver")
         ->push()
