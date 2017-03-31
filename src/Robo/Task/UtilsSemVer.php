@@ -130,6 +130,8 @@ class UtilsSemVer extends BaseTask implements TaskInterface
     // also do a plain version for easy reading by CI etc
     $semverPlain = substr($this->__toString(), 1);
     if (is_writeable($this->plainFilePath) === false || file_put_contents($this->plainFilePath, $semverPlain) === false) {
+      var_dump($this->__toString());
+      var_dump($semverPlain);
       throw new TaskException($this, "Failed to write plain semver file at {$this->plainFilePath}");
     }
 
