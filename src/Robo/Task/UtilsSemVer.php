@@ -126,16 +126,18 @@ class UtilsSemVer extends BaseTask implements TaskInterface
   }
   protected function dump()
   {
-    extract($this->version);
-    $semver = sprintf(self::SEMVER, $major, $minor, $patch, $special, $metadata);
-    if (is_writeable($this->path) === false || file_put_contents($this->path, $semver) === false) {
-      throw new TaskException($this, 'Failed to write semver file.');
-    }
 
     // also do a plain version for easy reading by CI etc
     $semverPlain = substr($this->__toString(), 1);
     if (is_writeable($this->plainFilePath) === false || file_put_contents($this->plainFilePath, $semverPlain) === false) {
-      throw new TaskException($this, 'Failed to write plain semver file.');
+      throw new TaskException($this, "Failed to write plain semver file at {$this->plainFilePath}");
+    }
+
+    // Dumps the full format semver file
+    extract($this->version);
+    $semver = sprintf(self::SEMVER, $major, $minor, $patch, $special, $metadata);
+    if (is_writeable($this->path) === false || file_put_contents($this->path, $semver) === false) {
+      throw new TaskException($this, "Failed to write semver file at {$this->path}");
     }
     return true;
   }
