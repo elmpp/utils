@@ -24,10 +24,11 @@ class UtilsSemVer extends BaseTask implements TaskInterface
 {
   const SEMVER = "---\n:major: %d\n:minor: %d\n:patch: %d\n:special: '%s'\n:metadata: '%s'";
   const REGEX = "/^\-\-\-\n:major:\s(0|[1-9]\d*)\n:minor:\s(0|[1-9]\d*)\n:patch:\s(0|[1-9]\d*)\n:special:\s'([a-zA-z0-9]*\.?(?:0|[1-9]\d*)?)'\n:metadata:\s'((?:0|[1-9]\d*)?(?:\.[a-zA-z0-9\.]*)?)'/";
-  protected $format = 'v%M.%m.%p%s';
+  protected $format      = 'v%M.%m.%p%s';
   protected $specialSeparator = '-';
   protected $metadataSeparator = '+';
   protected $path;
+  protected $plainFilePath;
   protected $version = [
     'major' => 0,
     'minor' => 0,
@@ -35,7 +36,7 @@ class UtilsSemVer extends BaseTask implements TaskInterface
     'special' => '',
     'metadata' => ''
   ];
-  public function __construct($filename = '')
+  public function __construct($filename = '', $plainfilename = '.semver.plain')
   {
     $this->path = $filename;
     if (file_exists($this->path)) {
@@ -128,6 +129,12 @@ class UtilsSemVer extends BaseTask implements TaskInterface
     $semver = sprintf(self::SEMVER, $major, $minor, $patch, $special, $metadata);
     if (is_writeable($this->path) === false || file_put_contents($this->path, $semver) === false) {
       throw new TaskException($this, 'Failed to write semver file.');
+    }
+
+    // also do a plain version for easy reading by CI etc
+    $semverPlain = substr($this->__toString(), 1);
+    if (is_writeable($this->plainFilePath) === false || file_put_contents($this->plainFilePath, $semverPlain) === false) {
+      throw new TaskException($this, 'Failed to write plain semver file.');
     }
     return true;
   }

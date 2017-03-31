@@ -28,13 +28,6 @@ trait RoboFileBuildTrait {
       throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'");
     }
 
-    $result = $this->taskUtilsSemVer('.semver')
-                   ->increment('patch')
-                   ->run()
-    ;
-    if (!$result->wasSuccessful()) {
-      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
-    }
 
     $coll = $this->collectionBuilder();
     if (!$opts['no-composer']) {
@@ -55,6 +48,14 @@ trait RoboFileBuildTrait {
       else {
         $coll->addCode( function() { $this->testAll(); });
       }
+    }
+
+    $result = $this->taskUtilsSemVer('.semver')
+                   ->increment('patch')
+                   ->run()
+    ;
+    if (!$result->wasSuccessful()) {
+      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
     }
 
     return $coll
