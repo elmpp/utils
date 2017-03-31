@@ -38,7 +38,8 @@ class UtilsSemVer extends BaseTask implements TaskInterface
   ];
   public function __construct($filename = '', $plainfilename = '.semver.plain')
   {
-    $this->path = $filename;
+    $this->path          = $filename;
+    $this->plainFilePath = $plainfilename;
     if (file_exists($this->path)) {
       $this->parse();
     }
