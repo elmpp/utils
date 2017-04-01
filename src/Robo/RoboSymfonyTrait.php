@@ -38,7 +38,7 @@ trait RoboSymfonyTrait {
 
     $coll = $this->collectionBuilder();
     $coll
-      ->taskCleanDir(["${projectDir}/var/cache", "${projectDir}/var/logs"])
+      ->taskCleanDir(["${projectDir}/var/cache", "${projectDir}/var/logs", "${projectDir}/var/sessions"])
       ->taskFilesystemStack()
         ->chmod("${projectDir}/var/cache", 0774, 0002, true) // assumes www-data is in current/root user's groups
         ->chmod("${projectDir}/var/logs", 0774, 0002,  true)
