@@ -37,7 +37,7 @@ trait RoboFileDockerTrait {
    */
   public function imagePush($fullTag) {
 
-    $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker' : 'docker';
+    $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker --' : 'docker';
     $this->taskExec("${binary} push $fullTag")
          ->printed(true)
          ->run()
@@ -51,7 +51,7 @@ trait RoboFileDockerTrait {
    */
   public function imagePull($fullTag) {
 
-    $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker' : 'docker';
+    $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker --' : 'docker';
     $this->taskExec("${binary} pull $fullTag")
          ->printed(true)
          ->run()

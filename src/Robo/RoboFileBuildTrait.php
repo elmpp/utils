@@ -2,6 +2,8 @@
 
 namespace Partridge\Utils\Robo;
 
+use ImporterBundle\Util\ArrayUtil;
+use ImporterBundle\Util\FormatUtil;
 use Partridge\Utils\Robo\Task\loadTasks;
 use Partridge\Utils\Util;
 
@@ -130,40 +132,73 @@ trait RoboFileBuildTrait {
   }
 
   /**
-   * Hits up Shippable and triggers a build of the testing repository for selenium stuff
+   * Hits up Shippable and triggers a build of the project specified.
+   * Also can be used to trigger release builds
    * Ideal for calling after a deployment on GKE or wherever
    *
    * http://docs.shippable.com/api/overview/
    */
-  public function shippableBuildTesting() {
+  public function shippableBuild($project, $globalEnvs = '{}', $opts = ['release' => false]) {
 
-    $url  = "https://api.shippable.com/projects/58398d0183cb0511001841ab/newBuild";
-    $ch = curl_init();
+    $callShippable = function($projectId, $buildProject, $globalEnvs) {
 
-    $shippableApiToken = getenv('SYMFONY__SHIPPABLEAPITOKEN');
-    if (!$shippableApiToken) {
-      throw new \RuntimeException("Cannot trigger shippable build without token set as env variable at 'SYMFONY__SHIPPABLEAPITOKEN'");
+      $url  = "https://api.shippable.com/projects/${projectId}/newBuild";
+      $ch = curl_init();
+      $this->say("URL: ${url}");
+
+      $shippableApiToken = getenv('SYMFONY__SHIPPABLEAPITOKEN');
+      if (!$shippableApiToken) {
+        throw new \RuntimeException("Cannot trigger shippable build without token set as env variable at 'SYMFONY__SHIPPABLEAPITOKEN'");
+      }
+
+      $headers = [
+        "Authorization: apiToken ${shippableApiToken}",
+        "Content-Type: application/json",
+      ];
+
+      $globalEnvJson = "{\"globalEnv\": ${globalEnvs}}";
+
+      curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+      curl_setopt($ch,CURLOPT_URL, $url);
+      curl_setopt($ch,CURLOPT_POST, 1);
+      curl_setopt(
+        $ch,
+        CURLOPT_POSTFIELDS,
+        $globalEnvJson
+      );
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+      $rawRes = @curl_exec($ch);
+      if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
+        throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
+      }
+
+      $this->say("Shippable build triggered at https://app.shippable.com/bitbucket/alanpartridge/${buildProject}/runs/${res['runNumber']}/1/console");
+      if ($globalEnvs) {
+        $this->say("globalEnv: ${globalEnvJson}");
+      }
+      curl_close($ch);
+    };
+
+
+    // we'll be calling the "docker-images" shippable project with specific globalEnv targets
+    if ($opts['release']) {
+      $buildProject = 'docker-images';
+      $projectId = $this->getShippableDetails($buildProject)['id'];
+      if ($project == 'api') {
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "importer"}');
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "api"}');
+      }
+      // frontend etc
+      else {
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $project . '"}');
+      }
     }
-
-    $headers = [
-      "Authorization: apiToken ${shippableApiToken}"
-    ];
-
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch,CURLOPT_URL, $url);
-    curl_setopt($ch,CURLOPT_POSTFIELDS, []);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $rawRes = @curl_exec($ch);
-    if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
-      throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
+    // standard project build (can include docker-images which will result in all standard images being built
+    else {
+      $projectId = $this->getShippableDetails($project)['id'];
+      $callShippable->__invoke($projectId, $project, $globalEnvs);
     }
-
-    $this->say("Shippable build triggered at https://app.shippable.com/runs/${res['runId']}/1/console");
-
-    //close connection
-    curl_close($ch);
-
   }
 
 }
