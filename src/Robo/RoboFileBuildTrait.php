@@ -2,8 +2,6 @@
 
 namespace Partridge\Utils\Robo;
 
-use ImporterBundle\Util\ArrayUtil;
-use ImporterBundle\Util\FormatUtil;
 use Partridge\Utils\Robo\Task\loadTasks;
 use Partridge\Utils\Util;
 
@@ -77,70 +75,25 @@ trait RoboFileBuildTrait {
   }
 
   /**
-   * Uses quicker method to create the image. Should not be used on CI server however
-   * @param srting $imageKey (importer|api)
-   * @param string $mainTag
-   * @return mixed
-   */
-  protected function packageProject($packageType, $mainTag = 'latest-dev') {
-
-    $packagerContainer = 'packager-' . $packageType;
-
-    if ($packageType == 'api') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['php-apache-api'] . ':latest';
-      $containerDocRoot = '/var/www/html';
-      $containerCmd     = 'CMD ["apache2-foreground"]';
-      $runAsUser        = 'www-data';
-    }
-    elseif ($packageType == 'importer') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['php-cli'] . ':latest';
-      $containerDocRoot = '/opt/app';
-      $containerCmd     = 'CMD ["php", "-a"]';
-      $runAsUser        = 'root';
-    }
-    elseif ($packageType == 'frontend') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['node'] . ':latest';
-      $containerDocRoot = '/var/www';
-      $containerCmd     = 'CMD ["node"]';
-      $runAsUser        = 'root';
-    }
-
-    $srcCodeLoc = $this->getCurrentProjectDir();
-    $semVer     = (string) (new \Robo\Task\Development\SemVer($srcCodeLoc . "/.semver"));
-
-    $this->say("Using base image: ${baseImage}");
-
-    $registry   = $this->getDefaultRegistry() . '/' . $this->imageNames[$packageType];
-    $registrySemver  = $registry . ':' . $semVer;
-    $registryMain    = $registry . ':' . $mainTag;
-
-    $collection = $this->getCollectionForPackaging(
-      $packagerContainer,
-      $baseImage,
-      $srcCodeLoc,
-      $containerDocRoot,
-      $registrySemver,
-      $registryMain,
-      $runAsUser,
-      $containerCmd
-    );
-
-    return $collection
-      ->run()
-      ->stopOnFail()
-    ;
-  }
-
-  /**
    * Hits up Shippable and triggers a build of the project specified.
-   * Also can be used to trigger release builds
-   * Ideal for calling after a deployment on GKE or wherever
+   * Abstraction of a couple of things here - as a way to invoke any shippable project but
+   * mainly to be used to trigger building of images (release or base images)
+   * Ideal for calling after a deployment on GKE or wherever.
+   *
+   * It is envisioned that individual projects should be added to the conditionals towards the bottom
+   * to faciliate easy invocations via just the one parameter
+   *
+   * ./robo shippable:build all             // all standard images
+   * ./robo shippable:build php-apache-api  // specific standard image
+   * ./robo shippable:build frontend --release --commit-or-branch=ceda465f18a7f7a2b0c4119427d592323e8d0f85  // build frontend project at that revision (best for post-shippable hooks)
+   * ./robo shippable:build frontend --release                                                              // build frontend project at default revision (tip of "dev" branch)
+   * ./robo shippable:build api --release                                                                   // build api project (results in api & importer images)
    *
    * http://docs.shippable.com/api/overview/
    */
-  public function shippableBuild($project, $globalEnvs = '{}', $opts = ['release' => false]) {
+  public function shippableBuild($imageOrProjectName, $opts = ['release' => false, 'commit-or-branch' => null, 'dry-run' => false]) {
 
-    $callShippable = function($projectId, $buildProject, $globalEnvs) {
+    $callShippable = function($projectId, $buildProject, $globalEnvs) use ($opts) {
 
       $url  = "https://api.shippable.com/projects/${projectId}/newBuild";
       $ch = curl_init();
@@ -168,12 +121,14 @@ trait RoboFileBuildTrait {
       );
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-      $rawRes = @curl_exec($ch);
-      if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
-        throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
+      if (!$opts['dry-run']) {
+        $rawRes = @curl_exec($ch);
+        if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
+          throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
+        }
+        $this->say("Shippable build triggered at https://app.shippable.com/bitbucket/alanpartridge/${buildProject}/runs/${res['runNumber']}/1/console");
       }
 
-      $this->say("Shippable build triggered at https://app.shippable.com/bitbucket/alanpartridge/${buildProject}/runs/${res['runNumber']}/1/console");
       if ($globalEnvs) {
         $this->say("globalEnv: ${globalEnvJson}");
       }
@@ -181,23 +136,31 @@ trait RoboFileBuildTrait {
     };
 
 
-    // we'll be calling the "docker-images" shippable project with specific globalEnv targets
+    // The "release" flag means we'll be invoking the docker-images project to create an image featuring our code
     if ($opts['release']) {
       $buildProject = 'docker-images';
+
+      // release branches allow for exact specification of the revision
+      $revisionJsonPart = $opts['commit-or-branch'] ? ', "partridge_commit": "' . $opts['commit-or-branch'] . '"' : '';
+
+
       $projectId = $this->getShippableDetails($buildProject)['id'];
-      if ($project == 'api') {
-        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "importer"}');
-        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "api"}');
+      if ($imageOrProjectName == 'api') {
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "importer"' . $revisionJsonPart . '}');
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "api"' . $revisionJsonPart . '}');
       }
       // frontend etc
       else {
-        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $project . '"}');
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $imageOrProjectName . '"' . $revisionJsonPart . '}');
       }
     }
+    // OTHER PROJECTS HERE BY IMAGEorProjectNAME??
+
     // standard project build (can include docker-images which will result in all standard images being built
     else {
-      $projectId = $this->getShippableDetails($project)['id'];
-      $callShippable->__invoke($projectId, $project, $globalEnvs);
+      $buildProject = 'docker-images';
+      $projectId = $this->getShippableDetails($buildProject)['id'];
+      $callShippable->__invoke($projectId, $imageOrProjectName, '{"partridge_target": "' . $imageOrProjectName . '"}');
     }
   }
 
