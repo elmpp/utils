@@ -156,6 +156,12 @@ trait RoboFileBuildTrait {
         $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $imageOrProjectName . '"' . $revisionJsonPart . '}');
       }
     }
+    // standard shippable project (no globalEnv etc required)
+    elseif (in_array($imageOrProjectName, ['testing', 'api', 'frontend'])) {
+      $buildProject = $imageOrProjectName;
+      $projectId = $this->getShippableDetails($buildProject)['id'];
+      $callShippable->__invoke($projectId, $imageOrProjectName, '{}');
+    }
     // OTHER PROJECTS HERE BY IMAGEorProjectNAME??
 
     // standard project build (can include docker-images which will result in all standard images being built
