@@ -172,4 +172,11 @@ trait RoboFileBuildTrait {
     }
   }
 
+  protected function getShippableDetails($project = 'api') {
+
+    $project = str_replace('-', '_', $project);
+    $constant = strtoupper("SHIPPABLE_PROJECT_${project}");
+    return constant("self::$constant");
+  }
+
 }
