@@ -87,13 +87,13 @@ trait RoboFileBuildTrait {
    *
    * ./robo shippable:build all             // all standard images
    * ./robo shippable:build php-apache-api  // specific standard image
-   * ./robo shippable:build frontend --release --commit-or-branch=ceda465f18a7f7a2b0c4119427d592323e8d0f85  // build frontend project at that revision (best for post-shippable hooks)
+   * ./robo shippable:build frontend --release --branch=ceda465f18a7f7a2b0c4119427d592323e8d0f85  // build frontend project at that revision (best for post-shippable hooks)
    * ./robo shippable:build frontend --release                                                              // build frontend project at default revision (tip of "dev" branch)
    * ./robo shippable:build api --release                                                                   // build api project (results in api & importer images)
    *
    * http://docs.shippable.com/api/overview/
    */
-  public function shippableBuild($imageOrProjectName, $opts = ['release' => false, 'commit-or-branch' => null, 'dry-run' => false]) {
+  public function shippableBuild($imageOrProjectName, $opts = ['release' => false, 'branch' => null, 'dry-run' => false]) {
 
     $callShippable = function($projectId, $buildProject, $globalEnvs) use ($opts) {
 
@@ -142,8 +142,8 @@ trait RoboFileBuildTrait {
     if ($opts['release']) {
       $buildProject = 'docker-images';
 
-      // release branches allow for exact specification of the revision
-      $revisionJsonPart = $opts['commit-or-branch'] ? ', "partridge_commit": "' . $opts['commit-or-branch'] . '"' : '';
+      // we can specify a "treeish" (branch) that should be built - http://stackoverflow.com/questions/4044368/what-does-tree-ish-mean-in-git
+      $revisionJsonPart = $opts['branch'] ? ', "partridge_treeish": "' . $opts['branch'] . '"' : '';
 
 
       $projectId = $this->getShippableDetails($buildProject)['id'];
