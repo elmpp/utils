@@ -47,6 +47,7 @@ trait RoboSymfonyTrait {
 
     if (!Util::isLocalDevMachine()) {
       $coll
+        ->chmod("/var/partridge/assets", 0775, 0000)
         ->chmod("/tmp/", 0774, 0000,  true)
         ->chown("/tmp",                           "www-data", true)
         ->chown("${projectDir}/var/cache",        "www-data", true)
