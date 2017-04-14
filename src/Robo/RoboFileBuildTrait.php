@@ -148,8 +148,8 @@ trait RoboFileBuildTrait {
 
       $projectId = $this->getShippableDetails($buildProject)['id'];
       if ($imageOrProjectName == 'api') {
-        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "importer"' . $revisionJsonPart . '}');
         $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "api"' . $revisionJsonPart . '}');
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "importer"' . $revisionJsonPart . '}');
       }
       // frontend etc
       else {
