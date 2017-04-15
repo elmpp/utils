@@ -57,6 +57,7 @@ class Util {
       }
       $currentDir = dirname($currentDir);
     }
+    throw new \Exception("unable to derive the projectRoot successfully");
   }
 
   /**
