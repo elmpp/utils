@@ -16,19 +16,19 @@ trait RoboFileTestTrait {
   }
 
   /**
-   * Runs the unit tests
+   * Runs the unit tests. Relies upon a phpunit.xml being present with the available testSuites defined within
    */
-  public function doTestUnit($dir = null, $opts = ['debug' => false, 'stop-on-fail' => true, 'results-output' => false, 'coverage-output' => false]) {
+  protected function doTestPhpUnit($testSuite, $opts = ['debug' => false, 'stop-on-fail' => false, 'results-output' => false, 'coverage-output' => false]) {
 
-    $dir = ArrayUtil::arrayCast($dir);
+    $testSuite = ArrayUtil::arrayCast($testSuite);
 
     /** @var \Robo\Collection\CollectionBuilder $coll */
     $coll = $this->collectionBuilder();
-    foreach ($dir as $aDir) {
+    foreach ($testSuite as $aSuite) {
       $coll
         ->taskPhpUnit()
-          ->files($aDir)
-          ->printed(true)
+          ->option('testSuite', $aSuite)
+          ->printOutput(true)
       ;
       if (!Util::isLocalDevMachine()) {
         $coll->option('exclude-group', 'localonly');
@@ -46,6 +46,20 @@ trait RoboFileTestTrait {
     return $coll->run();
   }
 
+  public function testBootstrap($env = 'test') {
+
+    $this->wiremockRun(true);
+    sleep(3);
+
+    $this
+      ->taskExec('bin/console doctrine:database:create')
+      ->option('env', $env)
+      ->option('if-not-exists')
+      ->printOutput(true)
+      ->run()
+    ;
+  }
+
   /**
    * Runs the selenium tests
    * These realised as node [nightwatch] scripts
@@ -58,10 +72,10 @@ trait RoboFileTestTrait {
     $res = $this->collectionBuilder()
       ->taskExec("npm install")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->taskExec("npm run ${projectName}:${platform}")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->run()
     ;
 
@@ -80,10 +94,10 @@ trait RoboFileTestTrait {
     $res = $this->collectionBuilder()
       ->taskExec("npm install")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->taskExec("npm run quick:${platform}")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->run()
     ;
 

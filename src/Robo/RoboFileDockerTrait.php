@@ -15,7 +15,7 @@ trait RoboFileDockerTrait {
 
     $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker --' : 'docker';
     $this->taskExec("${binary} push $fullTag")
-         ->printed(true)
+         ->printOutput(true)
          ->run()
     ;
   }
@@ -29,7 +29,7 @@ trait RoboFileDockerTrait {
 
     $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker --' : 'docker';
     $this->taskExec("${binary} pull $fullTag")
-         ->printed(true)
+         ->printOutput(true)
          ->run()
     ;
   }

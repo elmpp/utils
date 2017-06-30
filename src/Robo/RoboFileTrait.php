@@ -55,7 +55,7 @@ trait RoboFileTrait {
       if ($killOrIgnore !== false) {
         $this->say("Found existing process for grep ${egrep}");
         $res = $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  # http://stackoverflow.com/a/3510850/2968327
-          ->printed(true)
+          ->printOutput(true)
           ->run()
         ;
         sleep(2);

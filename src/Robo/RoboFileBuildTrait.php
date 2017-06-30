@@ -33,7 +33,7 @@ trait RoboFileBuildTrait {
       $coll->taskComposerUpdate()
          ->arg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
 //         ->arg('partridge/testing') // does not matter if out of sync
-         ->printed(true)
+         ->printOutput(true)
       ;
     }
     if (is_callable([$this, 'doBuildMergeDev'])) {

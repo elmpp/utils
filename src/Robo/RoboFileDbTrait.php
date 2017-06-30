@@ -23,7 +23,7 @@ trait RoboFileDbTrait {
          ->option('env', $env)
          ->arg('dump')
          ->arg($filename)
-         ->printed(true)
+         ->printOutput(true)
          ->run()
     ;
   }
@@ -47,7 +47,7 @@ trait RoboFileDbTrait {
       // and break further queries in this collection (probably cause it takes a while)
       ->taskExec('bin/console import:pgsql_users')
       ->option('env', $env)
-      ->printed(true)
+      ->printOutput(true)
       ->taskDockerExec($postgresContainer)
         ->interactive()
         //          ->exec("psql -U postgres -c 'drop database if exists ${database};'")
@@ -83,7 +83,7 @@ trait RoboFileDbTrait {
 //      // and break further queries in this collection (probably cause it takes a while)
 //      ->taskExec('bin/console import:pgsql_users')
 //      ->option('env', $env)
-//      ->printed(true)
+//      ->printOutput(true)
 //      ->taskExec('bin/console doctrine:database:drop')
 //      ->option('env', $env)
 //      ->option('if-exists')
@@ -114,7 +114,7 @@ trait RoboFileDbTrait {
                 ->option('env', $env)
                 ->arg('load')
                 ->arg($filename)
-                ->printed(true)
+                ->printOutput(true)
                 ->run()
       ;
   }
@@ -143,7 +143,7 @@ trait RoboFileDbTrait {
       // and break further queries in this collection (probably cause it takes a while)
       ->taskExec('bin/console import:pgsql_users')
       ->option('env', $env)
-      ->printed(true)
+      ->printOutput(true)
       ->taskExec('bin/console doctrine:database:drop')
       ->option('env', $env)
       ->option('if-exists')
@@ -165,7 +165,7 @@ trait RoboFileDbTrait {
     $this->taskExec('bin/console import:pgsql_users') // Need to reallow access to be always afterwards in all cases
          ->option('env', $env)
          ->option('reinstate')
-         ->printed(true)
+         ->printOutput(true)
          ->run()
     ;
   }

@@ -53,7 +53,7 @@ trait RoboFileSeleniumTrait {
 
     $collection
       ->taskExec('java -jar ' . $this->seleniumJar)
-      ->printed(true)
+      ->printOutput(true)
     ;
 
     if ($background) {
