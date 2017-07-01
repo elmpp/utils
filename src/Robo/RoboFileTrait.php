@@ -38,8 +38,8 @@ trait RoboFileTrait {
 
   protected function getCurrentGitBranch() {
 
-    $currentBranch = $this->taskExec('git rev-parse --abbrev-ref HEAD')->run();
-    $currentBranch = trim($currentBranch->getOutputData(), PHP_EOL);
+
+    $currentBranch = system('git rev-parse --abbrev-ref HEAD');
     return $currentBranch;
   }
 

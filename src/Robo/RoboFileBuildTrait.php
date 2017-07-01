@@ -24,8 +24,9 @@ trait RoboFileBuildTrait {
 
     $this->stopOnFail(true);
 
-    if ($this->getCurrentGitBranch() != 'dirty') {
-      throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'");
+    $foundBranch = $this->getCurrentGitBranch();
+    if ($foundBranch != 'dirty') {
+      throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'. Branch found: ${foundBranch}");
     }
 
     $coll = $this->collectionBuilder();
