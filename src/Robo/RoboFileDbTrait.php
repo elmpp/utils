@@ -21,8 +21,8 @@ trait RoboFileDbTrait {
     $coll
       ->taskExec('bin/console import:dbfixtures')
          ->option('env', $env)
-         ->arg('dump')
-         ->arg($filename)
+         ->rawArg('dump')
+         ->rawArg($filename)
          ->printOutput(true)
          ->run()
     ;
@@ -112,8 +112,8 @@ trait RoboFileDbTrait {
                 ->option('env', $env)
                 ->taskExec('bin/console import:dbfixtures')
                 ->option('env', $env)
-                ->arg('load')
-                ->arg($filename)
+                ->rawArg('load')
+                ->rawArg($filename)
                 ->printOutput(true)
                 ->run()
       ;

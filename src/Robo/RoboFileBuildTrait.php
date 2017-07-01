@@ -31,8 +31,8 @@ trait RoboFileBuildTrait {
     $coll = $this->collectionBuilder();
     if (!$opts['no-composer']) {
       $coll->taskComposerUpdate()
-         ->arg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
-//         ->arg('partridge/testing') // does not matter if out of sync
+         ->rawArg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
+//         ->rawArg('partridge/testing') // does not matter if out of sync
          ->printOutput(true)
       ;
     }

@@ -59,7 +59,7 @@ trait RoboFileSeleniumTrait {
     if ($background) {
       $collection
         ->background(true)
-        ->arg(' &> /tmp/selenium')
+        ->rawArg(' &> /tmp/selenium')
 //        ->option(' -debug')
       ;
     }
@@ -71,9 +71,9 @@ trait RoboFileSeleniumTrait {
     }
     elseif ($browserInstances) {
       $this->say("Starting grid node with browser instances ${browserInstances}");
-      $collection->arg('-role node');
-      $collection->arg('-hub http://localhost:4444/grid/register');
-      $collection->arg("-browser browserName=firefox,maxInstances=${browserInstances} -browser browserName=phantomjs,maxInstances=${browserInstances} -browser browserName=chrome,maxInstances=${browserInstances} -log /var/log/selenium.log");
+      $collection->rawArg('-role node');
+      $collection->rawArg('-hub http://localhost:4444/grid/register');
+      $collection->rawArg("-browser browserName=firefox,maxInstances=${browserInstances} -browser browserName=phantomjs,maxInstances=${browserInstances} -browser browserName=chrome,maxInstances=${browserInstances} -log /var/log/selenium.log");
     }
     else {
       $this->yell("Starting selenium server. Version " . basename($this->seleniumJar) . " ( Address: http://localhost:4444 )");
