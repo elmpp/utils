@@ -27,7 +27,7 @@ trait RoboFileTestTrait {
     foreach ($testSuite as $aSuite) {
       $coll
         ->taskPhpUnit()
-          ->option('testSuite', $aSuite)
+          ->option('testsuite', $aSuite)
           ->printOutput(true)
       ;
       if (!Util::isLocalDevMachine()) {

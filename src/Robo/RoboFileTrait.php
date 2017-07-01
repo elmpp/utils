@@ -45,16 +45,14 @@ trait RoboFileTrait {
 
   protected function systemProcessGrep($egrep, $killOrIgnore = false) {
 
-    $res = $this->taskExec("ps -ef | egrep -i '${egrep}' | awk '{print $2}'")  # http://stackoverflow.com/a/3510850/2968327
-      ->run()
-    ;
-    $processId = intval(trim($res->getOutputData()));
+    $processId = system("ps -ef | egrep -i '${egrep}' | awk '{print $2}'");      # http://stackoverflow.com/a/3510850/2968327
+    $processId = intval(trim($processId));
 
     if ($processId != 0) {
       if (is_null($killOrIgnore)) { return; }
       if ($killOrIgnore !== false) {
         $this->say("Found existing process for grep ${egrep}");
-        $res = $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  # http://stackoverflow.com/a/3510850/2968327
+        $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  # http://stackoverflow.com/a/3510850/2968327
           ->printOutput(true)
           ->run()
         ;
