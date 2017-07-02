@@ -42,8 +42,11 @@ trait RoboFileTestTrait {
       if ($opts['coverage-output']) {
         $coll->option('coverage-xml', 'shippable/codecoverage');
       }
+      if ($opts['debug']) {
+        $coll->option('debug');
+      }
     }
-    return $coll->run();
+    return $coll->run()->wasSuccessful();
   }
 
   public function testBootstrap($env = 'test') {
