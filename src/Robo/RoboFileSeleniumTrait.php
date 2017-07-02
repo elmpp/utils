@@ -33,6 +33,9 @@ trait RoboFileSeleniumTrait {
    */
   public function seleniumRun($background = true, $nodes = 1) {
 
+    $currentStopOnFail = \Robo\Result::$stopOnFail;
+    $this->stopOnFail(false);                // https://github.com/consolidation/Robo/issues/562
+
     $this->setupSelenium();
 
     $runGrid = ($nodes > 1);
@@ -47,9 +50,12 @@ trait RoboFileSeleniumTrait {
 
     $collection->run();
     sleep(8);
+
+    $this->stopOnFail($currentStopOnFail);
   }
 
   protected function doSeleniumRun($collection, $isHub = false, $browserInstances = 0, $background = false) {
+
 
     $collection
       ->taskExec('java -jar ' . $this->seleniumJar)
@@ -59,14 +65,14 @@ trait RoboFileSeleniumTrait {
     if ($background) {
       $collection
         ->background(true)
-        ->rawArg(' &> /tmp/selenium')
+        ->rawArg(' &> /tmp/selenium || :')   // robo always fails with backgrounding hence the "else noop"
 //        ->option(' -debug')
       ;
     }
 
     if ($isHub) {
       $this->yell("Starting selenium grid. Version " . basename($this->seleniumJar) . " ( Console: http://localhost:4444/grid/console )");
-      $collection->arg('-role hub');
+      $collection->rawArg('-role hub');
       sleep(3);
     }
     elseif ($browserInstances) {
@@ -78,6 +84,7 @@ trait RoboFileSeleniumTrait {
     else {
       $this->yell("Starting selenium server. Version " . basename($this->seleniumJar) . " ( Address: http://localhost:4444 )");
     }
+
 
     return $collection;
   }
