@@ -51,13 +51,13 @@ trait RoboFileBuildTrait {
     }
 
 
-//    $result = $this->taskUtilsSemVer('.semver')
-//                   ->increment('patch')
-//                   ->run()
-//    ;
-//    if (!$result->wasSuccessful()) {
-//      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
-//    }
+    $result = $this->taskUtilsSemVer('.semver')
+                   ->increment('patch')
+                   ->run()
+    ;
+    if (!$result->wasSuccessful()) {
+      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
+    }
 
     return $coll
       ->taskUtilsSemVer('.semver')
@@ -70,7 +70,7 @@ trait RoboFileBuildTrait {
         ->commit("Bumps .semver")
         ->push()
         ->checkout('dev')
-        ->merge('dirty')
+        ->merge('dirty -m="merge branch dirty into dev"')
         ->push()
         ->checkout('dirty')
       ->run()
