@@ -42,7 +42,7 @@ trait RoboFileTestTrait {
       if ($opts['coverage-output']) {
         $coll->option('coverage-xml', 'shippable/codecoverage');
       }
-      if (1==1 || $opts['debug']) {
+      if ($opts['debug']) {
         $coll->option('debug');
       }
     }
