@@ -12,6 +12,19 @@ trait RoboFileWiremockTrait {
 
 
   /**
+   * Convenience method for forming the namespace name. Used in lieu of constants (not allowed in traits)
+   */
+  public static function getNamespaceByIndex($index = 0) {
+
+    // 0 is considered default and maps to the "standard" namespace
+    $map = [
+      0 => 'standard',
+      1 => '1--football--arsenal-v-leicester',
+    ];
+    return $map[$index];
+  }
+
+  /**
    * Used to abstract the potentially differing directory for wiremock data
    * @param null $dir
    * @return string
