@@ -169,7 +169,8 @@ trait RoboFileBuildTrait {
     else {
       $buildProject = 'docker-images';
       $projectId = $this->getShippableDetails($buildProject)['id'];
-      $callShippable->__invoke($projectId, $imageOrProjectName, '{"partridge_target": "' . $imageOrProjectName . '"}');
+//      $callShippable->__invoke($projectId, $imageOrProjectName, '{"partridge_target": "' . $imageOrProjectName . '"}');
+      $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $imageOrProjectName . '"}');
     }
   }
 
