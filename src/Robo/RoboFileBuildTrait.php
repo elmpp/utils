@@ -51,13 +51,13 @@ trait RoboFileBuildTrait {
     }
 
 
-    $result = $this->taskUtilsSemVer('.semver')
-                   ->increment('patch')
-                   ->run()
-    ;
-    if (!$result->wasSuccessful()) {
-      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
-    }
+//    $result = $this->taskUtilsSemVer('.semver')
+//                   ->increment('patch')
+//                   ->run()
+//    ;
+//    if (!$result->wasSuccessful()) {
+//      throw new \Robo\Exception\TaskException(__CLASS__ee, "Bad semver file");
+//    }
 
     return $coll
       ->taskUtilsSemVer('.semver')
