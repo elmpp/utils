@@ -38,7 +38,8 @@ trait RoboSymfonyTrait {
 
     $coll = $this->collectionBuilder();
     $coll
-      ->taskCleanDir(["${projectDir}/var/cache", "${projectDir}/var/logs", "${projectDir}/var/sessions"])
+//      ->taskCleanDir(["${projectDir}/var/cache", "${projectDir}/var/logs", "${projectDir}/var/sessions"])
+      ->taskCleanDir(["${projectDir}/var/cache", "${projectDir}/var/logs"])
       ->taskFilesystemStack()
         ->chmod("${projectDir}/var/cache", 0774, 0002, true) // assumes www-data is in current/root user's groups
         ->chmod("${projectDir}/var/logs", 0774, 0002,  true)
@@ -47,7 +48,7 @@ trait RoboSymfonyTrait {
 
     if (!Util::isLocalDevMachine()) {
       $coll
-        ->chmod("/var/partridge/assets", 0775, 0000)
+        ->chmod("/var/partridge/assets", 0775, 0000)    // must be group writable
         ->chmod("/tmp/", 0774, 0000,  true)
         ->chown("/tmp",                           "www-data", true)
         ->chown("${projectDir}/var/cache",        "www-data", true)
