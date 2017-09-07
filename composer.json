@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "codegyre/robo": "1.*@dev"
+        "consolidation/robo": "1.*@dev"
     },
     "autoload": {
         "psr-4": {

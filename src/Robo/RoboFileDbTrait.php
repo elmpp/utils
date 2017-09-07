@@ -17,14 +17,82 @@ trait RoboFileDbTrait {
    */
   public function dbDump($filename = '', $env = 'test') {
 
-    $this->taskExec('bin/console import:dbfixtures')
+    $coll = $this->collectionBuilder();
+    $coll
+      ->taskExec('bin/console import:dbfixtures')
          ->option('env', $env)
-         ->arg('dump')
-         ->arg($filename)
-         ->printed(true)
+         ->rawArg('dump')
+         ->rawArg($filename)
+         ->printOutput(true)
          ->run()
     ;
   }
+
+  /**
+   * Drop and creates db
+   */
+  public function dbEmpty($env = 'test') {
+
+    $database = ($env == 'test') ? 'partridge_test' : 'partridge';
+    $postgresContainer = 'postgres';
+
+    $collection = $this->collectionBuilder();
+    $collection
+      ->taskExec('bin/console doctrine:database:create')
+      ->option('env', $env)
+      ->option('if-not-exists')
+      // required as dropping db with other connections won't be allowed
+      // actually disallows access to the database for other connections
+      // which is necessary as local persistent terminals reconnect
+      // and break further queries in this collection (probably cause it takes a while)
+      ->taskExec('bin/console import:pgsql_users')
+      ->option('env', $env)
+      ->printOutput(true)
+      ->taskDockerExec($postgresContainer)
+        ->interactive()
+        //          ->exec("psql -U postgres -c 'drop database if exists ${database};'")
+        ->exec("psql -U postgres ${database} -c 'drop schema if exists matview cascade;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'drop schema if exists public cascade;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'create schema if not exists matview;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'create schema if not exists public;'")
+        ->taskDockerExec($postgresContainer)
+        ->interactive()
+        ->exec("psql -U postgres ${database} -c 'SET search_path to public;'")
+      ->run()
+    ;
+  }
+//  /**
+//   * Drop and creates db
+//   */
+//  public function dbEmpty($env = 'test') {
+//
+//    $collection = $this->collectionBuilder();
+//    $collection
+//      ->taskExec('bin/console doctrine:database:create')
+//      ->option('env', $env)
+//      ->option('if-not-exists')
+//      // required as dropping db with other connections won't be allowed
+//      // actually disallows access to the database for other connections
+//      // which is necessary as local persistent terminals reconnect
+//      // and break further queries in this collection (probably cause it takes a while)
+//      ->taskExec('bin/console import:pgsql_users')
+//      ->option('env', $env)
+//      ->printOutput(true)
+//      ->taskExec('bin/console doctrine:database:drop')
+//      ->option('env', $env)
+//      ->option('if-exists')
+//      ->option('force')
+//      ->taskExec('bin/console doctrine:database:create')
+//      ->option('env', $env)
+//      ->run()
+//    ;
+//  }
 
   /**
    * Loads into the db for the env param supplied from file with name supplied (from fixtures_dir)
@@ -33,15 +101,20 @@ trait RoboFileDbTrait {
    */
   public function dbLoad($filename = '', $env = 'test') {
 
+    if ($filename == 'live') {
+      $this->dbLiveSync(null, $env);
+      return;
+    }
+
     return $this->collectionBuilder()
                 ->taskExec('bin/console doctrine:database:create')
                 ->option('if-not-exists')
                 ->option('env', $env)
                 ->taskExec('bin/console import:dbfixtures')
                 ->option('env', $env)
-                ->arg('load')
-                ->arg($filename)
-                ->printed(true)
+                ->rawArg('load')
+                ->rawArg($filename)
+                ->printOutput(true)
                 ->run()
       ;
   }
@@ -70,7 +143,7 @@ trait RoboFileDbTrait {
       // and break further queries in this collection (probably cause it takes a while)
       ->taskExec('bin/console import:pgsql_users')
       ->option('env', $env)
-      ->printed(true)
+      ->printOutput(true)
       ->taskExec('bin/console doctrine:database:drop')
       ->option('env', $env)
       ->option('if-exists')
@@ -92,7 +165,7 @@ trait RoboFileDbTrait {
     $this->taskExec('bin/console import:pgsql_users') // Need to reallow access to be always afterwards in all cases
          ->option('env', $env)
          ->option('reinstate')
-         ->printed(true)
+         ->printOutput(true)
          ->run()
     ;
   }

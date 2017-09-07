@@ -20,50 +20,57 @@ trait RoboFileBuildTrait {
    *  (to bump major/minor, a separate commit should be done beforehand)
    *
    */
-  public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false]) {
+  public function buildMergeDev($opts = ['no-composer' => false, 'quick' => false, 'super-quick' => false]) {
 
     $this->stopOnFail(true);
 
-    if ($this->getCurrentGitBranch() != 'dirty') {
-      throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'");
-    }
-
-    $result = $this->taskUtilsSemVer('.semver')
-                   ->increment('patch')
-                   ->run()
-    ;
-    if (!$result->wasSuccessful()) {
-      throw new \Robo\Exception\TaskException(__CLASS__, "Bad semver file");
+    $foundBranch = $this->getCurrentGitBranch();
+    if ($foundBranch != 'dirty') {
+      throw new \Robo\Exception\TaskException(__CLASS__, "You must be on the branch 'dirty'. Branch found: ${foundBranch}");
     }
 
     $coll = $this->collectionBuilder();
     if (!$opts['no-composer']) {
       $coll->taskComposerUpdate()
-         ->arg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
-//         ->arg('partridge/testing') // does not matter if out of sync
-         ->printed(true)
+         ->rawArg('partridge/utils') // makes sure composer.lock has latest proper utils and tests
+//         ->rawArg('partridge/testing') // does not matter if out of sync
+         ->printOutput(true)
       ;
     }
-    if ($opts['quick']) {
-      $coll->addCode( function() { $this->testQuick(); });
-    }
-    else {
-      $coll->addCode( function() { $this->testAll(); });
+    if (is_callable([$this, 'doBuildMergeDev'])) {
+      $coll->addCode( function() use ($opts) { $this->doBuildMergeDev($opts); });
     }
 
-    if (is_callable([$this, 'doBuildMergeDev'])) {
-      $coll->addCode( function() { $this->doBuildMergeDev(); });
+    if (!$opts['super-quick']) {
+      if ($opts['quick']) {
+        $coll->addCode( function() { $this->testQuick(); });
+      }
+      else {
+        $coll->addCode( function() { $this->testAll(); });
+      }
     }
+
+
+//    $result = $this->taskUtilsSemVer('.semver')
+//                   ->increment('patch')
+//                   ->run()
+//    ;
+//    if (!$result->wasSuccessful()) {
+//      throw new \Robo\Exception\TaskException(__CLASS__ee, "Bad semver file");
+//    }
 
     return $coll
+      ->taskUtilsSemVer('.semver')
+        ->increment('patch')
       ->taskGitStack()
         ->stopOnFail(true)
         ->add('.semver')
+        ->add('.semver.plain')
         ->add('composer.lock')
         ->commit("Bumps .semver")
         ->push()
         ->checkout('dev')
-        ->merge('dirty')
+        ->merge('dirty -m="merge branch dirty into dev"')
         ->push()
         ->checkout('dirty')
       ->run()
@@ -71,95 +78,107 @@ trait RoboFileBuildTrait {
   }
 
   /**
-   * Uses quicker method to create the image. Should not be used on CI server however
-   * @param srting $imageKey (importer|api)
-   * @param string $mainTag
-   * @return mixed
-   */
-  protected function packageProject($packageType, $mainTag = 'latest-dev') {
-
-    $packagerContainer = 'packager-' . $packageType;
-
-    if ($packageType == 'api') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['php-apache-api'] . ':latest';
-      $containerDocRoot = '/var/www/html';
-      $containerCmd     = 'CMD ["apache2-foreground"]';
-      $runAsUser        = 'www-data';
-    }
-    elseif ($packageType == 'importer') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['php-cli'] . ':latest';
-      $containerDocRoot = '/opt/app';
-      $containerCmd     = 'CMD ["php", "-a"]';
-      $runAsUser        = 'root';
-    }
-    elseif ($packageType == 'frontend') {
-      $baseImage        = $this->getDefaultRegistry() . '/' . $this->imageNames['node'] . ':latest';
-      $containerDocRoot = '/var/www';
-      $containerCmd     = 'CMD ["node"]';
-      $runAsUser        = 'root';
-    }
-
-    $srcCodeLoc = $this->getCurrentProjectDir();
-    $semVer     = (string) (new \Robo\Task\Development\SemVer($srcCodeLoc . "/.semver"));
-
-    $this->say("Using base image: ${baseImage}");
-
-    $registry   = $this->getDefaultRegistry() . '/' . $this->imageNames[$packageType];
-    $registrySemver  = $registry . ':' . $semVer;
-    $registryMain    = $registry . ':' . $mainTag;
-
-    $collection = $this->getCollectionForPackaging(
-      $packagerContainer,
-      $baseImage,
-      $srcCodeLoc,
-      $containerDocRoot,
-      $registrySemver,
-      $registryMain,
-      $runAsUser,
-      $containerCmd
-    );
-
-    return $collection
-      ->run()
-      ->stopOnFail()
-    ;
-  }
-
-  /**
-   * Hits up Shippable and triggers a build of the testing repository for selenium stuff
-   * Ideal for calling after a deployment on GKE or wherever
+   * Hits up Shippable and triggers a build of the project specified.
+   * Abstraction of a couple of things here - as a way to invoke any shippable project but
+   * mainly to be used to trigger building of images (release or base images)
+   * Ideal for calling after a deployment on GKE or wherever.
+   *
+   * It is envisioned that individual projects should be added to the conditionals towards the bottom
+   * to faciliate easy invocations via just the one parameter
+   *
+   * ./robo shippable:build all             // all standard images
+   * ./robo shippable:build php-apache-api  // specific standard image
+   * ./robo shippable:build frontend --release --branch=ceda465f18a7f7a2b0c4119427d592323e8d0f85  // build frontend project at that revision (best for post-shippable hooks)
+   * ./robo shippable:build frontend --release                                                              // build frontend project at default revision (tip of "dev" branch)
+   * ./robo shippable:build api --release                                                                   // build api project (results in api & importer images)
    *
    * http://docs.shippable.com/api/overview/
    */
-  public function shippableBuildTesting() {
+  public function shippableBuild($imageOrProjectName, $opts = ['release' => false, 'branch' => null, 'dry-run' => false]) {
 
-    $url  = "https://api.shippable.com/projects/58398d0183cb0511001841ab/newBuild";
-    $ch = curl_init();
+    $callShippable = function($projectId, $buildProject, $globalEnvs) use ($opts) {
 
-    $shippableApiToken = getenv('SYMFONY__SHIPPABLEAPITOKEN');
-    if (!$shippableApiToken) {
-      throw new \RuntimeException("Cannot trigger shippable build without token set as env variable at 'SYMFONY__SHIPPABLEAPITOKEN'");
+      $url  = "https://api.shippable.com/projects/${projectId}/newBuild";
+      $ch = curl_init();
+      $this->say("URL: ${url}");
+
+      $shippableApiToken = getenv('SYMFONY__SHIPPABLEAPITOKEN');
+      if (!$shippableApiToken) {
+        throw new \RuntimeException("Cannot trigger shippable build without token set as env variable at 'SYMFONY__SHIPPABLEAPITOKEN'");
+      }
+
+      $headers = [
+        "Authorization: apiToken ${shippableApiToken}",
+        "Content-Type: application/json",
+      ];
+
+      $globalEnvJson = "{\"globalEnv\": ${globalEnvs}}";
+
+      curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+      curl_setopt($ch,CURLOPT_URL, $url);
+      curl_setopt($ch,CURLOPT_POST, 1);
+      curl_setopt(
+        $ch,
+        CURLOPT_POSTFIELDS,
+        $globalEnvJson
+      );
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+      if (!$opts['dry-run']) {
+        $rawRes = @curl_exec($ch);
+        if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
+          throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
+        }
+        $this->say("Shippable build triggered at https://app.shippable.com/bitbucket/alanpartridge/${buildProject}/runs/${res['runNumber']}/1/console");
+      }
+
+      if ($globalEnvs) {
+        $this->say("globalEnv: ${globalEnvJson}");
+      }
+      curl_close($ch);
+    };
+
+
+    // The "release" flag means we'll be invoking the docker-images project to create an image featuring our code
+    if ($opts['release']) {
+      $buildProject = 'docker-images';
+
+      // we can specify a "treeish" (branch) that should be built - http://stackoverflow.com/questions/4044368/what-does-tree-ish-mean-in-git
+      $revisionJsonPart = $opts['branch'] ? ', "partridge_treeish": "' . $opts['branch'] . '"' : '';
+
+
+      $projectId = $this->getShippableDetails($buildProject)['id'];
+      if ($imageOrProjectName == 'api') {
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "api"' . $revisionJsonPart . '}');
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "importer"' . $revisionJsonPart . '}');
+      }
+      // frontend etc
+      else {
+        $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $imageOrProjectName . '"' . $revisionJsonPart . '}');
+      }
     }
-
-    $headers = [
-      "Authorization: apiToken ${shippableApiToken}"
-    ];
-
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch,CURLOPT_URL, $url);
-    curl_setopt($ch,CURLOPT_POSTFIELDS, []);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $rawRes = @curl_exec($ch);
-    if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
-      throw new \RuntimeException("Could not json decode the response or imvalid key used. Raw: " . Util::consolePrint($rawRes));
+    // standard shippable project (no globalEnv etc required)
+    elseif (in_array($imageOrProjectName, ['testing', 'api', 'frontend'])) {
+      $buildProject = $imageOrProjectName;
+      $projectId = $this->getShippableDetails($buildProject)['id'];
+      $callShippable->__invoke($projectId, $imageOrProjectName, '{}');
     }
+    // OTHER PROJECTS HERE BY IMAGEorProjectNAME??
 
-    $this->say("Shippable build triggered at https://app.shippable.com/runs/${res['runId']}/1/console");
+    // standard project build (can include docker-images which will result in all standard images being built
+    else {
+      $buildProject = 'docker-images';
+      $projectId = $this->getShippableDetails($buildProject)['id'];
+//      $callShippable->__invoke($projectId, $imageOrProjectName, '{"partridge_target": "' . $imageOrProjectName . '"}');
+      $callShippable->__invoke($projectId, $buildProject, '{"partridge_target": "' . $imageOrProjectName . '"}');
+    }
+  }
 
-    //close connection
-    curl_close($ch);
+  protected function getShippableDetails($project = 'api') {
 
+    $project = str_replace('-', '_', $project);
+    $constant = strtoupper("SHIPPABLE_PROJECT_${project}");
+    return constant("self::$constant");
   }
 
 }

@@ -31,7 +31,10 @@ trait RoboFileSeleniumTrait {
    * http://www.seleniumhq.org/docs/07_selenium_grid.jsp
    * http://elementalselenium.com/tips/52-grid
    */
-  public function seleniumRun($background = false, $nodes = 1) {
+  public function seleniumRun($background = true, $nodes = 1) {
+
+    $currentStopOnFail = \Robo\Result::$stopOnFail;
+    $this->stopOnFail(false);                // https://github.com/consolidation/Robo/issues/562
 
     $this->setupSelenium();
 
@@ -47,37 +50,41 @@ trait RoboFileSeleniumTrait {
 
     $collection->run();
     sleep(8);
+
+    $this->stopOnFail($currentStopOnFail);
   }
 
   protected function doSeleniumRun($collection, $isHub = false, $browserInstances = 0, $background = false) {
 
+
     $collection
       ->taskExec('java -jar ' . $this->seleniumJar)
-      ->printed(true)
+      ->printOutput(true)
     ;
 
     if ($background) {
       $collection
         ->background(true)
-        ->arg(' &> /tmp/selenium')
+        ->rawArg(' &> /tmp/selenium || :')   // robo always fails with backgrounding hence the "else noop"
 //        ->option(' -debug')
       ;
     }
 
     if ($isHub) {
       $this->yell("Starting selenium grid. Version " . basename($this->seleniumJar) . " ( Console: http://localhost:4444/grid/console )");
-      $collection->arg('-role hub');
+      $collection->rawArg('-role hub');
       sleep(3);
     }
     elseif ($browserInstances) {
       $this->say("Starting grid node with browser instances ${browserInstances}");
-      $collection->arg('-role node');
-      $collection->arg('-hub http://localhost:4444/grid/register');
-      $collection->arg("-browser browserName=firefox,maxInstances=${browserInstances} -browser browserName=phantomjs,maxInstances=${browserInstances} -browser browserName=chrome,maxInstances=${browserInstances} -log /var/log/selenium.log");
+      $collection->rawArg('-role node');
+      $collection->rawArg('-hub http://localhost:4444/grid/register');
+      $collection->rawArg("-browser browserName=firefox,maxInstances=${browserInstances} -browser browserName=phantomjs,maxInstances=${browserInstances} -browser browserName=chrome,maxInstances=${browserInstances} -log /var/log/selenium.log");
     }
     else {
       $this->yell("Starting selenium server. Version " . basename($this->seleniumJar) . " ( Address: http://localhost:4444 )");
     }
+
 
     return $collection;
   }

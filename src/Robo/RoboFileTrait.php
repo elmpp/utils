@@ -13,7 +13,8 @@ trait RoboFileTrait {
    */
   protected function getCurrentProjectDir() {
 
-    return substr(realpath($_SERVER["SCRIPT_FILENAME"]), 0, stripos(realpath($_SERVER["SCRIPT_FILENAME"]), '/robo'));
+    return Util::getProjectRoot();
+//    return substr(realpath($_SERVER["SCRIPT_FILENAME"]), 0, stripos(realpath($_SERVER["SCRIPT_FILENAME"]), '/robo'));
   }
 
   /**
@@ -30,26 +31,29 @@ trait RoboFileTrait {
     return Util::isLocalDevMachine();
   }
 
+  protected function getCurrentExecutingUser() {
+
+    return exec('whoami');
+  }
+
   protected function getCurrentGitBranch() {
 
-    $currentBranch = $this->taskExec('git rev-parse --abbrev-ref HEAD')->run();
-    $currentBranch = trim($currentBranch->getOutputData(), PHP_EOL);
+
+    $currentBranch = system('git rev-parse --abbrev-ref HEAD');
     return $currentBranch;
   }
 
   protected function systemProcessGrep($egrep, $killOrIgnore = false) {
 
-    $res = $this->taskExec("ps -ef | egrep -i '${egrep}' | awk '{print $2}'")  # http://stackoverflow.com/a/3510850/2968327
-      ->run()
-    ;
-    $processId = intval(trim($res->getOutputData()));
+    $processId = system("ps -ef | egrep -i '${egrep}' | awk '{print $2}'");      # http://stackoverflow.com/a/3510850/2968327
+    $processId = intval(trim($processId));
 
     if ($processId != 0) {
       if (is_null($killOrIgnore)) { return; }
       if ($killOrIgnore !== false) {
         $this->say("Found existing process for grep ${egrep}");
-        $res = $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  # http://stackoverflow.com/a/3510850/2968327
-          ->printed(true)
+        $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  # http://stackoverflow.com/a/3510850/2968327
+          ->printOutput(true)
           ->run()
         ;
         sleep(2);

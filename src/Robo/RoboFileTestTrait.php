@@ -3,6 +3,9 @@
 namespace Partridge\Utils\Robo;
 
 
+use ImporterBundle\Util\ArrayUtil;
+use Partridge\Utils\Util;
+
 trait RoboFileTestTrait {
 
 
@@ -13,13 +16,50 @@ trait RoboFileTestTrait {
   }
 
   /**
-   * Runs the unit tests
+   * Runs the unit tests. Relies upon a phpunit.xml being present with the available testSuites defined within
    */
-  public function doTestUnit($path = null) {
+  protected function doTestPhpUnit($testSuite, $opts = ['debug' => false, 'stop-on-fail' => false, 'results-output' => false, 'coverage-output' => false]) {
 
-    return $this->taskPhpUnit()
-      ->files($path)
-      ->printed(true)
+    $testSuite = ArrayUtil::arrayCast($testSuite);
+
+    /** @var \Robo\Collection\CollectionBuilder $coll */
+    $coll = $this->collectionBuilder();
+    foreach ($testSuite as $aSuite) {
+      $coll
+        ->taskPhpUnit('./vendor/bin/phpunit')
+          ->option('testsuite', $aSuite)
+          ->printOutput(true)
+      ;
+      if (!Util::isLocalDevMachine()) {
+        $coll->option('exclude-group', 'localonly');
+      }
+      if ($opts['stop-on-fail']) {
+        $coll->option('stop-on-fail');
+      }
+      if ($opts['results-output']) {
+        $coll->option('log-junit', 'shippable/testresults/junit.xml');
+      }
+      if ($opts['coverage-output']) {
+        $coll->option('coverage-xml', 'shippable/codecoverage');
+      }
+      if ($opts['debug']) {
+        $coll->option('debug');
+      }
+    }
+    $coll->run();
+    // explicitly return 0 - Robo 1.1 expects this now seemingly on success
+  }
+
+  public function testBootstrap($env = 'test') {
+
+    $this->wiremockRun(true);
+    sleep(3);
+
+    $this
+      ->taskExec('bin/console doctrine:database:create')
+      ->option('env', $env)
+      ->option('if-not-exists')
+      ->printOutput(true)
       ->run()
     ;
   }
@@ -36,10 +76,10 @@ trait RoboFileTestTrait {
     $res = $this->collectionBuilder()
       ->taskExec("npm install")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->taskExec("npm run ${projectName}:${platform}")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->run()
     ;
 
@@ -58,10 +98,10 @@ trait RoboFileTestTrait {
     $res = $this->collectionBuilder()
       ->taskExec("npm install")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->taskExec("npm run quick:${platform}")
         ->dir($testingDir)
-        ->printed(true)
+        ->printOutput(true)
       ->run()
     ;
 
