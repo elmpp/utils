@@ -36,6 +36,8 @@ trait RoboFileDockerTrait {
    */
   public function imagePush($fullTag) {
 
+    // LOOKS LIKE THIS HAS NOW CHANGED TO gloud docker -- push
+    // https://cloud.google.com/container-registry/docs/pushing
     $binary = (false !== stristr($fullTag, 'gcr.io')) ? 'gcloud docker' : 'docker';
     $this->taskExec("${binary} push $fullTag")
          ->printed(true)
