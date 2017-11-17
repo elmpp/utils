@@ -10,7 +10,7 @@
         }
     ],
     "require": {
-        "consolidation/robo": "1.*@dev"
+        "consolidation/robo": "^1.0"
     },
     "autoload": {
         "psr-4": {
