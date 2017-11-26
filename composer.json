@@ -10,11 +10,14 @@
         }
     ],
     "require": {
-        "consolidation/robo": "^1.0"
+        "consolidation/robo": "^1.0",
+        "google/apiclient": "^2.0",
+        "phpunit/phpunit": "^6.4"
     },
     "autoload": {
         "psr-4": {
-            "Partridge\\Utils\\": "src/"
+          "Partridge\\Utils\\": "src/",
+          "Partridge\\Utils\\Tests": "tests/"
         }
     }
 }
