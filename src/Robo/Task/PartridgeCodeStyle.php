@@ -1,15 +1,15 @@
 <?php
+
 namespace Partridge\Utils\Robo\Task;
 
 use Robo\Task\BaseTask;
 use Robo\Task\Base\Exec;
 
-
 /**
  * Runs php-cs-fixer
  * Assumes version 2, installed via composer
  *  - http://cs.sensiolabs.org/
- * 
+ *
  *
  * ``` php
  * <?php
@@ -23,47 +23,52 @@ use Robo\Task\Base\Exec;
 class PartridgeCodeStyle extends BaseTask
 {
   /**
-   * @var String $binary
+   * @var string
    */
   protected $binary = './vendor/bin/php-cs-fixer';
-    /**
-     * The directory to operate on
-     * @var String $dir
-     */
-    protected $dir;
-    /**
-     * @var String
-     */
-    protected $configFile = "./.php_cs";
-    /**
-     * additional args
-     * @var string
-     */
-    protected $args = '';
+  /**
+   * The directory to operate on
+   *
+   * @var string
+   */
+  protected $dir;
+  /**
+   * @var string
+   */
+  protected $configFile = './.php_cs';
+  /**
+   * additional args
+   *
+   * @var string
+   */
+  protected $args = '';
 
-    public function __construct($dir = './')
-    {
-      $this->dir = $dir;
-    }
+  public function __construct($dir = './')
+  {
+    $this->dir = $dir;
+  }
 
-    /**
-     * Additional args
-     * @param string $args
-     * @return this
-     */
-    public function args(String $args): self {
-      $this->args = $args;
-      return $this;
-    }
+  /**
+   * Additional args
+   *
+   * @param string $args
+   *
+   * @return $this
+   */
+  public function args(String $args): self
+  {
+    $this->args = $args;
 
-    public function run()
-    {
-        $command = "{$this->binary} --config={$this->configFile} fix {$this->dir} {$this->args}";
+    return $this;
+  }
 
-        // execute the command
-        $exec = new Exec($command);
+  public function run()
+  {
+    $command = "{$this->binary} --config={$this->configFile} fix {$this->dir} {$this->args}";
 
-        return $exec->inflect($this)->printOutput(true)->run();
-    }
+    // execute the command
+    $exec = new Exec($command);
 
+    return $exec->inflect($this)->printOutput(true)->run();
+  }
 }

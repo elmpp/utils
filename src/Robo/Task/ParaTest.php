@@ -1,6 +1,7 @@
 <?php
 
 namespace Partridge\Utils\Robo\Task;
+
 use Robo\Task\Testing\PHPUnit;
 
 /**
@@ -16,8 +17,8 @@ use Robo\Task\Testing\PHPUnit;
  * ?>
  * ```
  */
-class ParaTest extends PHPUnit  {
-
+class ParaTest extends PHPUnit
+{
   protected $command;
 
   /**
@@ -30,11 +31,13 @@ class ParaTest extends PHPUnit  {
 
   /**
    * ParaTest constructor.
-   * @param int  $processes
+   *
+   * @param int $processes
+   *
    * @throws \Robo\Exception\TaskException
    */
-  public function __construct($processes = 5) {
-
+  public function __construct($processes = 5)
+  {
 //    $this->command = $this->findExecutablePhar('paratest');
     $this->command = './vendor/bin/paratest';
     if (!$this->command) {
@@ -45,37 +48,44 @@ class ParaTest extends PHPUnit  {
 
   /**
    * Launches new process for each method of a testclass
+   *
    * @param bool $paralleliseByMethod
+   *
    * @return $this
    */
-  public function functional($paralleliseByMethod = false) {
-
+  public function functional($paralleliseByMethod = false)
+  {
     $this->arg('-f');
+
     return $this;
   }
 
   /**
    * https://github.com/brianium/paratest#optimizing-speed
+   *
    * @param bool $paralleliseByMethod
+   *
    * @return $this
    */
-  public function wrapperRunner($wrapperRunner = false) {
-
+  public function wrapperRunner($wrapperRunner = false)
+  {
     if ($wrapperRunner) {
       $this->option('runner', 'wrapperRunner');
     }
+
     return $this;
   }
 
-  public function getCommand() {
-
-    return $this->command . $this->arguments . $this->files;
+  public function getCommand()
+  {
+    return $this->command.$this->arguments.$this->files;
   }
 
-  public function run() {
-
+  public function run()
+  {
     $command = $this->getCommand();
     $this->printTaskInfo("Running ${command}", ['arguments' => $this->arguments]);
+
     return $this->executeCommand($this->getCommand());
   }
 }

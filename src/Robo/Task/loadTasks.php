@@ -2,16 +2,14 @@
 
 namespace Partridge\Utils\Robo\Task;
 
-use Partridge\Utils\Robo\Task\Task;
-use Robo\Container\SimpleServiceProvider;
-use Partridge\Utils\Robo\Task\PartridgeCodeStyle;
 
 trait loadTasks
 {
-
   /**
    * http://robo.li/extending/
+   *
    * @param string $pathToSemVer
+   *
    * @return SemVer
    */
   protected function taskUtilsSemVer($pathToSemVer = '.semver')
@@ -21,16 +19,18 @@ trait loadTasks
 
   /**
    * @param string $pathToSemVer
-   * @param int $processes
-   * @param bool $wrapperRunner
+   * @param int    $processes
+   * @param bool   $wrapperRunner
+   *
    * @return ParaTest
    */
   protected function taskParaTest($processes = 5, $wrapperRunner = false)
   {
     return $this->task(ParaTest::class, $processes, $wrapperRunner);
   }
-  
-  protected function taskPartridgeCodeStyle($dir) {
+
+  protected function taskPartridgeCodeStyle($dir)
+  {
     return $this->task(PartridgeCodeStyle::class, $dir);
   }
 }
