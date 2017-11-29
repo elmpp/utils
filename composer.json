@@ -13,12 +13,16 @@
         "consolidation/robo": "^1.0",
         "google/apiclient": "^2.0",
         "phpunit/phpunit": "^6.4",
-        "mikey179/vfsStream": "^1.6"
+        "mikey179/vfsStream": "^1.6",
+        "friendsofphp/php-cs-fixer": "^2.8"
     },
     "autoload": {
         "psr-4": {
           "Partridge\\Utils\\": "src/",
           "Partridge\\Utils\\Tests\\": "tests/"
         }
+    },
+    "require-dev": {
+        "m6web/php-cs-fixer-config": "^1.0"
     }
 }

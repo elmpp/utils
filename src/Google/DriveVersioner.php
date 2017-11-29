@@ -23,7 +23,7 @@ class DriveVersioner {
    */
   protected $driveRootId;
 
-  public function construct(\Google_Service_Drive $driveClient, $driveRootId) {
+  public function __construct(\Google_Service_Drive $client, $driveRootId) {
     $this->client = $client;
     $this->driveRootId = $driveRootId;
   }
@@ -50,12 +50,19 @@ class DriveVersioner {
     if (!$driveDir = $this->queryForDirectory($ns)) {
       $driveDir = $this->createDirectory($ns);
     }
+
+    return $driveDir;
   }
 
   protected function queryForDirectory(String $ns): ?\Google_Service_Drive_DriveFile {
-    return $this->client->files->listFiles([
+    /** @var \Google_Service_Drive_FileList $fileList */
+    $fileList = $this->client->files->listFiles([
       'q' => "'{$this->driveRootId}' in parents and name = '${ns}' and mimeType='" . self::MIME_DIR . "'" // http://bit.ly/2Bu19ro
     ]);
+    if (count($fileList->files) > 1) {
+      throw new DriveVersionerException(DriveVersionerException::DUPLICATE_NAMESPACE_DIRECTORY . "Namespace: ${ns}");
+    }
+    return $fileList->files[0] ?? null;
   }
 
   /**

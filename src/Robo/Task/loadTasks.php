@@ -2,8 +2,9 @@
 
 namespace Partridge\Utils\Robo\Task;
 
-use Robo\Container\SimpleServiceProvider;
 use Partridge\Utils\Robo\Task\Task;
+use Robo\Container\SimpleServiceProvider;
+use Partridge\Utils\Robo\Task\PartridgeCodeStyle;
 
 trait loadTasks
 {
@@ -28,13 +29,8 @@ trait loadTasks
   {
     return $this->task(ParaTest::class, $processes, $wrapperRunner);
   }
-
-  /**
-   * @param string $pathToPhpUnit
-   * @return PartridgePHPUnit
-   */
-  protected function taskPartridgePHPUnit($pathToPhpUnit = null)
-  {
-    return $this->task(PartridgePHPUnit::class, $pathToPhpUnit);
+  
+  protected function taskPartridgeCodeStyle($dir) {
+    return $this->task(PartridgeCodeStyle::class, $dir);
   }
 }
