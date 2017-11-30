@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<ruleset name="Partridge">
+  <description>Basically Symfony with opening function brackets on same line.</description>
+  
+  <!-- Extend the Symfony standards one from here - https://github.com/squizlabs/PHP_CodeSniffer/wiki/Advanced-Usage -->
+  <config name="installed_paths" value="vendor/escapestudios/symfony2-coding-standard"/>
+  
+  <!-- https://github.com/squizlabs/PHP_CodeSniffer/wiki/Annotated-ruleset.xml -->
+  <file>./tests</file>
+  <file>./src</file>
+
+
+  <!-- http://bit.ly/2AoRTqZ -->
+  <rule ref="PSR2">
+    <exclude name="Squiz.Functions.MultiLineFunctionDeclaration.BraceOnSameLine" />
+  </rule>
+  <rule ref="Generic.Functions.OpeningFunctionBraceKernighanRitchie" />
+
+  <!-- Below is how to indent 2 spaces but breaks other stuff. Not really worth it :( -->
+  <!-- <rule ref="PEAR.WhiteSpace.ScopeIndent">
+    <properties>
+      <property name="indent" value="2"/>
+    </properties>
+  </rule> -->
+
+</ruleset>

@@ -25,28 +25,32 @@ class PartridgeCodeStyle extends BaseTask
   /**
    * @var string
    */
-  protected $binary = './vendor/bin/php-cs-fixer';
+    protected $binary = './vendor/bin/php-cs-fixer';
   /**
    * The directory to operate on
    *
    * @var string
    */
-  protected $dir;
+    protected $dir;
   /**
    * @var string
    */
-  protected $configFile = './.php_cs';
+    protected $configFile = './.codesniffer.xml';
+  /**
+   * Lint/Fix
+   * @var String
+   */
+    protected $mode = 'lint';
   /**
    * additional args
    *
    * @var string
    */
-  protected $args = '';
+    protected $args = '';
 
-  public function __construct($dir = './')
-  {
-    $this->dir = $dir;
-  }
+    public function __construct($dir = './') {
+        $this->dir = $dir;
+    }
 
   /**
    * Additional args
@@ -55,20 +59,38 @@ class PartridgeCodeStyle extends BaseTask
    *
    * @return $this
    */
-  public function args(String $args): self
-  {
-    $this->args = $args;
+    public function args(String $args): self {
+        $this->args = $args;
 
-    return $this;
-  }
+        return $this;
+    }
 
-  public function run()
-  {
-    $command = "{$this->binary} --config={$this->configFile} fix {$this->dir} {$this->args}";
+    public function mode(String $mode): self {
+        $this->mode = $mode;
+        return $this;
+    }
 
-    // execute the command
-    $exec = new Exec($command);
 
-    return $exec->inflect($this)->printOutput(true)->run();
-  }
+    public function run() {
+      // $command = "{$this->binary} --config={$this->configFile} fix {$this->dir} {$this->args}";
+      // $command = "./vendor/bin/phpcbf --standard={$this->configFile} {$this->dir}";
+      // $installCmd = "./vendor/bin/phpcs --config-set installed_paths vendor/escapestudios/symfony2-coding-standard";
+
+        switch ($this->mode) {
+            case 'lint':
+              // please note this will pick up the phpcs.xml file "Standard"
+                $command = "vendor/bin/phpcs {$this->dir} {$this->args}"; // https://github.com/djoos/Symfony-coding-standard";
+                break;
+            case 'fix':
+                $command = "vendor/bin/phpcbf {$this->dir} {$this->args}";
+                break;
+            default:
+                throw new \RuntimeException("Unknown mode {$this->mode}");
+        }
+
+      // execute the command
+        $exec = new Exec($command);
+
+        return $exec->inflect($this)->printOutput(true)->run();
+    }
 }

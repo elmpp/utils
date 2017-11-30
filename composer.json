@@ -14,7 +14,7 @@
         "google/apiclient": "^2.0",
         "phpunit/phpunit": "^6.4",
         "mikey179/vfsStream": "^1.6",
-        "friendsofphp/php-cs-fixer": "^2.8"
+        "squizlabs/php_codesniffer": "^3.1"
     },
     "autoload": {
         "psr-4": {
@@ -23,6 +23,6 @@
         }
     },
     "require-dev": {
-        "m6web/php-cs-fixer-config": "^1.0"
+        "escapestudios/symfony2-coding-standard": "3.x-dev"
     }
 }

@@ -24,151 +24,140 @@ use Robo\Task\BaseTask;
  */
 class UtilsSemVer extends BaseTask implements TaskInterface
 {
-  const SEMVER = "---\n:major: %d\n:minor: %d\n:patch: %d\n:special: '%s'\n:metadata: '%s'";
-  const REGEX = "/^\-\-\-\n:major:\s(0|[1-9]\d*)\n:minor:\s(0|[1-9]\d*)\n:patch:\s(0|[1-9]\d*)\n:special:\s'([a-zA-z0-9]*\.?(?:0|[1-9]\d*)?)'\n:metadata:\s'((?:0|[1-9]\d*)?(?:\.[a-zA-z0-9\.]*)?)'/";
-  protected $format = 'v%M.%m.%p%s';
-  protected $specialSeparator = '-';
-  protected $metadataSeparator = '+';
-  protected $path;
-  protected $plainFilePath;
-  protected $version = [
-  'major' => 0,
-  'minor' => 0,
-  'patch' => 0,
-  'special' => '',
-  'metadata' => '',
-  ];
+    const SEMVER = "---\n:major: %d\n:minor: %d\n:patch: %d\n:special: '%s'\n:metadata: '%s'";
+    const REGEX = "/^\-\-\-\n:major:\s(0|[1-9]\d*)\n:minor:\s(0|[1-9]\d*)\n:patch:\s(0|[1-9]\d*)\n:special:\s'([a-zA-z0-9]*\.?(?:0|[1-9]\d*)?)'\n:metadata:\s'((?:0|[1-9]\d*)?(?:\.[a-zA-z0-9\.]*)?)'/";
+    protected $format = 'v%M.%m.%p%s';
+    protected $specialSeparator = '-';
+    protected $metadataSeparator = '+';
+    protected $path;
+    protected $plainFilePath;
+    protected $version = [
+    'major' => 0,
+    'minor' => 0,
+    'patch' => 0,
+    'special' => '',
+    'metadata' => '',
+    ];
 
-  public function __construct($filename = '', $plainfilename = '.semver.plain')
-  {
-    $this->path = $filename;
-    $this->plainFilePath = $plainfilename;
-    if (file_exists($this->path)) {
-      $this->parse();
-    }
-  }
-
-  public function __toString()
-  {
-    $search = ['%M', '%m', '%p', '%s'];
-    $replace = $this->version + ['extra' => ''];
-    foreach (['special', 'metadata'] as $key) {
-      if (!empty($replace[$key])) {
-        $separator = $key.'Separator';
-        $replace['extra'] .= $this->{$separator}.$replace[$key];
-      }
-      unset($replace[$key]);
+    public function __construct($filename = '', $plainfilename = '.semver.plain') {
+        $this->path = $filename;
+        $this->plainFilePath = $plainfilename;
+        if (file_exists($this->path)) {
+            $this->parse();
+        }
     }
 
-    return str_replace($search, $replace, $this->format);
-  }
+    public function __toString() {
+        $search = ['%M', '%m', '%p', '%s'];
+        $replace = $this->version + ['extra' => ''];
+        foreach (['special', 'metadata'] as $key) {
+            if (!empty($replace[$key])) {
+                $separator = $key.'Separator';
+                $replace['extra'] .= $this->{$separator}.$replace[$key];
+            }
+            unset($replace[$key]);
+        }
 
-  public function setFormat($format)
-  {
-    $this->format = $format;
-
-    return $this;
-  }
-
-  public function setMetadataSeparator($separator)
-  {
-    $this->metadataSeparator = $separator;
-
-    return $this;
-  }
-
-  public function setPrereleaseSeparator($separator)
-  {
-    $this->specialSeparator = $separator;
-
-    return $this;
-  }
-
-  public function increment($what = 'patch')
-  {
-    switch ($what) {
-    case 'major':
-    $this->version['major']++;
-    $this->version['minor'] = 0;
-    $this->version['patch'] = 0;
-    break;
-    case 'minor':
-    $this->version['minor']++;
-    $this->version['patch'] = 0;
-    break;
-    case 'patch':
-    $this->version['patch']++;
-    break;
-    default:
-    throw new TaskException(
-      $this,
-      'Bad argument, only one of the following is allowed: major, minor, patch'
-    );
-  }
-
-    return $this;
-  }
-
-  public function prerelease($tag = 'RC')
-  {
-    if (!is_string($tag)) {
-      throw new TaskException($this, 'Bad argument, only strings allowed.');
+        return str_replace($search, $replace, $this->format);
     }
-    $number = 0;
-    if (!empty($this->version['special'])) {
-      list($current, $number) = explode('.', $this->version['special']);
-      if ($tag != $current) {
+
+    public function setFormat($format) {
+        $this->format = $format;
+
+        return $this;
+    }
+
+    public function setMetadataSeparator($separator) {
+        $this->metadataSeparator = $separator;
+
+        return $this;
+    }
+
+    public function setPrereleaseSeparator($separator) {
+        $this->specialSeparator = $separator;
+
+        return $this;
+    }
+
+    public function increment($what = 'patch') {
+        switch ($what) {
+            case 'major':
+                $this->version['major']++;
+                $this->version['minor'] = 0;
+                $this->version['patch'] = 0;
+                break;
+            case 'minor':
+                $this->version['minor']++;
+                $this->version['patch'] = 0;
+                break;
+            case 'patch':
+                $this->version['patch']++;
+                break;
+            default:
+                throw new TaskException(
+                    $this,
+                    'Bad argument, only one of the following is allowed: major, minor, patch'
+                );
+        }
+
+        return $this;
+    }
+
+    public function prerelease($tag = 'RC') {
+        if (!is_string($tag)) {
+            throw new TaskException($this, 'Bad argument, only strings allowed.');
+        }
         $number = 0;
-      }
-    }
-    $number++;
-    $this->version['special'] = implode('.', [$tag, $number]);
+        if (!empty($this->version['special'])) {
+            list($current, $number) = explode('.', $this->version['special']);
+            if ($tag != $current) {
+                $number = 0;
+            }
+        }
+        $number++;
+        $this->version['special'] = implode('.', [$tag, $number]);
 
-    return $this;
-  }
-
-  public function metadata($data)
-  {
-    if (is_array($data)) {
-      $data = implode('.', $data);
-    }
-    $this->version['metadata'] = $data;
-
-    return $this;
-  }
-
-  public function run()
-  {
-    $written = $this->dump();
-
-    return new Result($this, (int) ($written === false), $this->__toString());
-  }
-
-  protected function dump()
-  {
-    // also do a plain version for easy reading by CI etc
-    $semverPlain = substr($this->__toString(), 1);
-    if (is_writeable($this->plainFilePath) === false || file_put_contents($this->plainFilePath, $semverPlain) === false) {
-      throw new TaskException($this, "Failed to write plain semver file at {$this->plainFilePath}");
+        return $this;
     }
 
-    // Dumps the full format semver file
-    extract($this->version);
-    $semver = sprintf(self::SEMVER, $major, $minor, $patch, $special, $metadata);
-    if (is_writeable($this->path) === false || file_put_contents($this->path, $semver) === false) {
-      throw new TaskException($this, "Failed to write semver file at {$this->path}");
+    public function metadata($data) {
+        if (is_array($data)) {
+            $data = implode('.', $data);
+        }
+        $this->version['metadata'] = $data;
+
+        return $this;
     }
 
-    return true;
-  }
+    public function run() {
+        $written = $this->dump();
 
-  protected function parse()
-  {
-    $output = file_get_contents($this->path);
-    if (!preg_match_all(self::REGEX, $output, $matches)) {
-      throw new TaskException($this, 'Bad semver file.');
+        return new Result($this, (int) ($written === false), $this->__toString());
     }
-    list(, $major, $minor, $patch, $special, $metadata) = array_map('current', $matches);
-    $this->version = compact('major', 'minor', 'patch', 'special', 'metadata');
-  }
+
+    protected function dump() {
+      // also do a plain version for easy reading by CI etc
+        $semverPlain = substr($this->__toString(), 1);
+        if (is_writeable($this->plainFilePath) === false || file_put_contents($this->plainFilePath, $semverPlain) === false) {
+            throw new TaskException($this, "Failed to write plain semver file at {$this->plainFilePath}");
+        }
+
+      // Dumps the full format semver file
+        extract($this->version);
+        $semver = sprintf(self::SEMVER, $major, $minor, $patch, $special, $metadata);
+        if (is_writeable($this->path) === false || file_put_contents($this->path, $semver) === false) {
+            throw new TaskException($this, "Failed to write semver file at {$this->path}");
+        }
+
+        return true;
+    }
+
+    protected function parse() {
+        $output = file_get_contents($this->path);
+        if (!preg_match_all(self::REGEX, $output, $matches)) {
+            throw new TaskException($this, 'Bad semver file.');
+        }
+        list(, $major, $minor, $patch, $special, $metadata) = array_map('current', $matches);
+        $this->version = compact('major', 'minor', 'patch', 'special', 'metadata');
+    }
 }

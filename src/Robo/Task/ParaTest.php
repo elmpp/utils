@@ -19,7 +19,7 @@ use Robo\Task\Testing\PHPUnit;
  */
 class ParaTest extends PHPUnit
 {
-  protected $command;
+    protected $command;
 
   /**
    * Directory of test files or single test file to run. Appended to
@@ -27,7 +27,7 @@ class ParaTest extends PHPUnit
    *
    * @var string
    */
-  protected $files = '';
+    protected $files = '';
 
   /**
    * ParaTest constructor.
@@ -36,15 +36,14 @@ class ParaTest extends PHPUnit
    *
    * @throws \Robo\Exception\TaskException
    */
-  public function __construct($processes = 5)
-  {
-//    $this->command = $this->findExecutablePhar('paratest');
-    $this->command = './vendor/bin/paratest';
-    if (!$this->command) {
-      throw new \Robo\Exception\TaskException(__CLASS__, "'Paratest' expected in vendor/bin/para");
+    public function __construct($processes = 5) {
+  //    $this->command = $this->findExecutablePhar('paratest');
+        $this->command = './vendor/bin/paratest';
+        if (!$this->command) {
+            throw new \Robo\Exception\TaskException(__CLASS__, "'Paratest' expected in vendor/bin/para");
+        }
+        $this->arg("-p ${processes}");
     }
-    $this->arg("-p ${processes}");
-  }
 
   /**
    * Launches new process for each method of a testclass
@@ -53,12 +52,11 @@ class ParaTest extends PHPUnit
    *
    * @return $this
    */
-  public function functional($paralleliseByMethod = false)
-  {
-    $this->arg('-f');
+    public function functional($paralleliseByMethod = false) {
+        $this->arg('-f');
 
-    return $this;
-  }
+        return $this;
+    }
 
   /**
    * https://github.com/brianium/paratest#optimizing-speed
@@ -67,25 +65,22 @@ class ParaTest extends PHPUnit
    *
    * @return $this
    */
-  public function wrapperRunner($wrapperRunner = false)
-  {
-    if ($wrapperRunner) {
-      $this->option('runner', 'wrapperRunner');
+    public function wrapperRunner($wrapperRunner = false) {
+        if ($wrapperRunner) {
+            $this->option('runner', 'wrapperRunner');
+        }
+
+        return $this;
     }
 
-    return $this;
-  }
+    public function getCommand() {
+        return $this->command.$this->arguments.$this->files;
+    }
 
-  public function getCommand()
-  {
-    return $this->command.$this->arguments.$this->files;
-  }
+    public function run() {
+        $command = $this->getCommand();
+        $this->printTaskInfo("Running ${command}", ['arguments' => $this->arguments]);
 
-  public function run()
-  {
-    $command = $this->getCommand();
-    $this->printTaskInfo("Running ${command}", ['arguments' => $this->arguments]);
-
-    return $this->executeCommand($this->getCommand());
-  }
+        return $this->executeCommand($this->getCommand());
+    }
 }
