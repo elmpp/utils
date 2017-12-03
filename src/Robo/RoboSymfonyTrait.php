@@ -27,7 +27,8 @@ trait RoboSymfonyTrait
         ->run()
         ;
     }
-
+    
+    
   /**
    * Should be run as root before dropping down into www-data
    */
