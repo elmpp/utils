@@ -82,4 +82,17 @@ class Util
 
         return $output;
     }
+
+    /**
+     * Will attempt to create a directory if it's not there, optionally recursing
+     * up parents
+     * @param String $dir
+     * @param boolean $recurse
+     * @return void
+     */
+    public static function createDirIfNonExistent($dir, $recurse = false) {
+        if (!is_dir($dir)) {
+            mkdir($dir, $recurse);
+        }
+    }
 }
