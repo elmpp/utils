@@ -3,6 +3,7 @@
 namespace Partridge\Utils\Google;
 
 use Partridge\Utils\Util;
+use Partridge\Utils\ArrayUtil;
 use Symfony\Component\Console\Output\Output;
 use Partridge\Utils\Google\DriveVersionerMessages;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -32,6 +33,24 @@ class DriveVersioner
      */
     protected $output;
 
+    /**
+     * The current $ns
+     * @var String
+     */
+    protected $ns;
+    /**
+     * The current $discriminator
+     * @var String
+     */
+    protected $discriminator;
+
+    /**
+     * 1 = silent
+     * 2 = notice
+     * 3 = all
+     */
+    protected $verbosity = 2;
+
     public function __construct(\Google_Service_Drive $client, $driveRootId) {
         $this->client = $client;
         $this->driveRootId = $driveRootId;
@@ -56,45 +75,40 @@ class DriveVersioner
    * @throws DriveVersionerException
    */
     public function version(String $fileLoc, String $ns, String $discriminator): \Google_Service_Drive_DriveFile {
+        
+        $this->ns = $ns;
+        $this->discriminator = $discriminator;
+
         if (!is_readable($fileLoc)) {
             $this->output(DriveVersionerMessages::VERSIONABLE_FILE_NOT_READABLE);
             throw new DriveVersionerException(DriveVersionerMessages::VERSIONABLE_FILE_NOT_READABLE."File not readable: " . $fileLoc);
         }
 
-        if ($driveDir = $this->queryForDirectory($ns)) {
+        if ($driveDir = $this->queryForDirectory()) {
             $this->output(DriveVersionerMessages::DEBUG_NS_DIR_FOUND);
         } else {
-            $driveDir = $this->createDirectory($ns);
+            $driveDir = $this->createDirectory();
             $this->output(DriveVersionerMessages::DEBUG_NS_DIR_CREATED);
         }
 
         if ($versionedFile = $this->queryForVersioned($driveDir)) {
             $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND);
         } else {
-            $versionedFile = $this->createVersioned($ns, $discriminator, $driveDir, $fileLoc);
+            $versionedFile = $this->createVersioned($driveDir, $fileLoc);
             $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_CREATED);
         }
         
-        $this->createUpdate($ns, $discriminator, $versionedFile, $fileLoc);
+        $this->createUpdate($versionedFile, $driveDir, $fileLoc);
         $this->output(DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED);
 
         return $versionedFile;
-    }
-
-    /**
-     * @param Output $output
-     * @return self
-     */
-    public function setOutput(Output $output): self {
-        $this->output = $output;
-        return $this;
     }
 
     protected function queryForVersioned(\Google_Service_Drive_DriveFile $nsDir): ?\Google_Service_Drive_DriveFile {
         try {
             /** @var \Google_Service_Drive_FileList $fileList */
             $fileList = $this->client->files->listFiles([
-            'q' => "'{$nsDir->id}' in parents and name = '" . self::VERSIONED_FILENAME . "'",
+            'q' => "'{$nsDir->id}' in parents and trashed = false and name = '" . self::VERSIONED_FILENAME . "'",
             ]);
         }
         catch (\Google_Exception $e) {
@@ -108,11 +122,14 @@ class DriveVersioner
         return $fileList->files[0] ?? null;
     }
     
-    protected function queryForDirectory(String $ns): ?\Google_Service_Drive_DriveFile {
+    protected function queryForDirectory(): ?\Google_Service_Drive_DriveFile {
         try {
+            $q = "'{$this->driveRootId}' in parents and trashed = false and name = '{$this->ns}' and mimeType='".self::MIME_DIR."'"; // http://bit.ly/2Bu19ro
+            // $this->output("queryForDirectory query: ${q}");
+
             /** @var \Google_Service_Drive_FileList $fileList */
             $fileList = $this->client->files->listFiles([
-                'q' => "'{$this->driveRootId}' in parents and name = '${ns}' and mimeType='".self::MIME_DIR."'", // http://bit.ly/2Bu19ro
+                'q' => $q
             ]);
         }
         catch (\Google_Exception $e) {
@@ -132,23 +149,82 @@ class DriveVersioner
      * 
      * @throws DriveVersionerException
      *
+     * @return \Google_Service_Drive_DriveFile
+     */
+    protected function createUpdate(\Google_Service_Drive_DriveFile $alreadyVersioned, \Google_Service_Drive_DriveFile $nsDir, String $fileLoc): \Google_Service_Drive_DriveFile {
+        
+        $bodyFields = [
+            'mimeType' => $this->getMimeType($fileLoc),
+            'properties' => [
+                'discriminator' => $this->discriminator,
+                'id' => md5($this->ns . $this->discriminator)
+            ],
+            'originalFilename' => basename($fileLoc),
+            'keepRevisionForever' => true,
+            'uploadType' => 'multipart',
+            'name' => self::VERSIONED_FILENAME,
+        ];
+        $opts = [
+            'data' => file_get_contents($fileLoc),
+        ];
+        
+        $this->outputServiceParams('CreateNewVersion body fields', $bodyFields);
+        $this->outputServiceParams('CreateNewVersion opts', $opts);
+
+        try {
+            return $this->client->files->update(
+                $alreadyVersioned->getId(),
+                new \Google_Service_Drive_DriveFile($bodyFields),
+                $opts
+            );
+        } catch (\Google_Exception $e) {
+            $this->filterCommonExceptions($e);
+            $this->output(DriveVersionerMessages::DRIVE_CANNOT_UPDATE_VERSIONED_FILE);
+            throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_UPDATE_VERSIONED_FILE.$e->getMessage(), $e->getCode(), $e);
+        }
+    }
+    
+    /**
+     * 
+     *  - https://developers.google.com/apis-explorer/#p/drive/v3/drive.files.create
+     *  - https://developers.google.com/drive/v3/web/manage-uploads
+     * 
+     * @throws DriveVersionerException
+     *
      * @param string $ns
      * @param string $discriminator
      *
      * @return \Google_Service_Drive_DriveFile
      */
-    protected function createUpdate(String $ns, String $discriminator, \Google_Service_Drive_DriveFile $alreadyVersioned, String $fileLoc): \Google_Service_Drive_DriveFile {
-        $driveOpts = $this->doCreateVersionableServiceCallOpts($ns, $discriminator, $fileLoc);
-
+    protected function createVersioned(\Google_Service_Drive_DriveFile $nsDir, String $fileLoc): \Google_Service_Drive_DriveFile {
+        $bodyFields = [
+            'mimeType' => $this->getMimeType($fileLoc), 
+            'properties' => [
+                'discriminator' => $this->discriminator,
+                'id' => md5($this->ns . $this->discriminator)
+            ],
+            'originalFilename' => basename($fileLoc),
+            'keepRevisionForever' => true,
+            'uploadType' => 'multipart',
+            'name' => self::VERSIONED_FILENAME,
+            'parents' => [$nsDir->getId()],
+        ];
+        $opts = [
+            'data' => file_get_contents($fileLoc),
+        ];
+        
+        $this->outputServiceParams('CreateVersioned body fields', $bodyFields);
+        $this->outputServiceParams('CreateVersioned opts', $opts);
+        
         try {
-            return $this->client->files->update(
-                $alreadyVersioned->getId(),
-                $alreadyVersioned,
-                $driveOpts
+            return $this->client->files->create(
+                new \Google_Service_Drive_DriveFile($bodyFields),
+                $opts
             );
         } catch (\Google_Exception $e) {
             $this->filterCommonExceptions($e);
-            throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_UPDATE_VERSIONED_FILE.$e->getMessage(), $e);
+            $this->output(DriveVersionerMessages::DRIVE_CANNOT_CREATE_VERSIONED_FILE);
+            throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_CREATE_VERSIONED_FILE.$e->getMessage(), $e->getCode(), $e);
         }
     }
     
@@ -156,49 +232,25 @@ class DriveVersioner
      * @throws DriveVersionerException
      *
      * @param string $ns
-     * @param string $discriminator
-     *
-     * @return \Google_Service_Drive_DriveFile
-   */
-  protected function createVersioned(String $ns, String $discriminator, \Google_Service_Drive_DriveFile $nsDir, String $fileLoc): \Google_Service_Drive_DriveFile {
-        $versioned = new \Google_Service_Drive_DriveFile();
-      
-        $versioned->name = self::VERSIONED_FILENAME;
-        $versioned->parents = [$nsDir->getId()];
-        $driveOpts = $this->doCreateVersionableServiceCallOpts($ns, $discriminator, $fileLoc);
-        
-        $this->output('CreateVersioned $opts: ' . Util::consolePrint($driveOpts));
-
-        try {
-            return $this->client->files->create(
-                $versioned,
-                $driveOpts
-            );
-        } catch (\Google_Exception $e) {
-            $this->filterCommonExceptions($e);
-            throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_CREATE_VERSIONED_FILE.$e->getMessage(), $e->getCode(), $e);
-        }
-    }
-
-    /**
-     * @throws DriveVersionerException
-     *
-     * @param string $ns
      *
      * @return \Google_Service_Drive_DriveFile
      */
-    protected function createDirectory(String $ns): \Google_Service_Drive_DriveFile {
-        $dir = new \Google_Service_Drive_DriveFile();
-        
-        $dir->name = $ns;
-        $dir->parents = [$this->driveRootId];
+    protected function createDirectory(): \Google_Service_Drive_DriveFile {
+        $bodyFields = [
+            'mimeType' => self::MIME_DIR, 
+            'name' => $this->ns,
+            'parents' => [$this->driveRootId],
+        ];
+        $opts = [
+        ];
+
+        $this->outputServiceParams('CreateDirectory body fields', $bodyFields);
+        $this->outputServiceParams('CreateDirectory opts', $opts);
         
         try {
             return $this->client->files->create(
-                $dir,
-                [
-                    'mimeType' => self::MIME_DIR,
-                ]
+                new \Google_Service_Drive_DriveFile($bodyFields),
+                $opts
             );
         } catch (\Google_Exception $e) {
             $this->filterCommonExceptions($e);
@@ -206,6 +258,7 @@ class DriveVersioner
                 $this->output(DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND);
                 throw new DriveVersionerException(DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND.$this->driveRootId, $e->getCode(), $e);
             }
+            $this->output(DriveVersionerMessages::DRIVE_CANNOT_CREATE_DIR);
             throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_CREATE_DIR.$e->getMessage(), $e->getCode(), $e);
         }
     }
@@ -216,29 +269,33 @@ class DriveVersioner
      * @return void
      */
     protected function filterCommonExceptions(\Google_Exception $e): void {
-        if ($e->getCode() == 403) {
-            $this->output(DriveVersionerMessages::AUTHORISATION_FAIL);
-            throw new DriveVersionerException(DriveVersionerMessages::AUTHORISATION_FAIL, $e->getCode(), $e);
+        if ($e instanceof \Google_Service_Exception) {
+            $errors = $e->getErrors();
+            if ($error = $errors[0] ?? null) {
+                switch ($error['reason']) {
+                    case 'insufficientFilePermissions':
+                        $this->output(DriveVersionerMessages::AUTHORISATION_FAIL);
+                        throw new DriveVersionerException(DriveVersionerMessages::AUTHORISATION_FAIL, $e->getCode(), $e);
+                        break;
+                    case 'parentNotAFolder':
+                        $this->output(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND);
+                        throw new DriveVersionerException(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND, $e->getCode(), $e);
+                        break;
+                    case 'fieldNotWritable':
+                        $this->output(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND);
+                        throw new DriveVersionerException(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND, $e->getCode(), $e);
+                        break;
+                    default:
+                        var_dump("new google exception");
+                        var_dump($e->getMessage());
+                        Util::consolePrint($error);
+                        die;
+                }
+            }
         }
-    }
-
-    /**
-     * @param String $ns
-     * @param String $discriminator
-     * @param String $fileLoc
-     * @return array
-     */
-    protected function doCreateVersionableServiceCallOpts(String $ns, String $discriminator, String $fileLoc): array {
-        return [
-            'mimeType' => $this->getMimeType($fileLoc), 
-            'uploadType' => 'multipart',
-            'originalFilename' => basename($fileLoc),
-            'keepRevisionForever' => true,
-            'properties' => [
-                'discriminator' => $discriminator,
-                'id' => md5($ns . $discriminator)
-            ]
-        ];
+        else {
+            throw $e; // need to surface weird Google Exceptions here
+        }
     }
 
     protected function getMimeType(String $fileLoc): String {
@@ -256,9 +313,32 @@ class DriveVersioner
         }
         return $ftype;
     }
+
+    protected function outputServiceParams(String $prefix, array $fields): self {
+        if (ArrayUtil::arrayPluck($fields, 'data')) {
+            $fields['data'] = '--REDACTED--';
+        }
+        return $this->output("${prefix}: \n" . Util::consolePrint($fields), 3);
+    }
     
-    protected function output(String $message): self {
-        $this->output->writeln($message);
+    protected function output(String $message, Int $verbosity = 2): self {
+        if ($this->verbosity >= $verbosity) {
+            $this->output->writeln(" | {$this->ns} : {$this->discriminator} | $message");
+        }
+        return $this;
+    }
+
+    public function setVerbosity(Int $verbosity): self {
+        $this->verbosity = $verbosity;
+        return $this;
+    }
+
+     /**
+     * @param Output $output
+     * @return self
+     */
+    public function setOutput(Output $output): self {
+        $this->output = $output;
         return $this;
     }
 

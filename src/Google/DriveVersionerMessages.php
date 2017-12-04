@@ -9,6 +9,7 @@ class DriveVersionerMessages
     const DRIVE_CANNOT_CREATE_VERSIONED_FILE = 'Unable to create versionable file. ';
     const DRIVE_CANNOT_UPDATE_VERSIONED_FILE = 'Unable to update versionable file. ';
     const DRIVE_ROOT_NOT_FOUND = "Unable to locate the root directory. This is required for use. Use Google Drive web interface to find ID of writable directory (ideally empty). ";
+    const PARENT_ROOT_NOT_FOUND = "Unable to locate the parent directory. This is required for use. Use Google Drive web interface to find ID of writable directory (ideally empty). ";
     const VERSIONABLE_FILE_NOT_READABLE = 'The file to version is not readable. ';
     const DUPLICATE_NAMESPACE_DIRECTORY = 'Found multiple directories for the namespace. This is bad. ';
     const DUPLICATE_VERSIONED_FILE = 'Found multiple files for the versioned file. This is bad. ';

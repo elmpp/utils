@@ -103,8 +103,11 @@ class DriveVersionerTest extends TestCase
         }
         catch (\Exception $e) {
             $this->assertOutputs([
-                DriveVersionerMessages::VERSIONABLE_FILE_NOT_READABLE,
-            ]);
+                    DriveVersionerMessages::VERSIONABLE_FILE_NOT_READABLE,
+                ],
+                $this->testNs, 
+                '2017-01-01'
+            );
             throw $e;
         }
     }
@@ -127,8 +130,11 @@ class DriveVersionerTest extends TestCase
         }
         catch (\Exception $e) {
             $this->assertOutputs([
-                DriveVersionerMessages::AUTHORISATION_FAIL,
-            ]);
+                    DriveVersionerMessages::AUTHORISATION_FAIL,
+                ],
+                $this->testNs, 
+                '2017-01-01'
+            );
             throw $e;
         }
     }
@@ -157,8 +163,11 @@ class DriveVersionerTest extends TestCase
         }
         catch (\Exception $e) {
             $this->assertOutputs([
-                DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND,
-            ]);
+                    DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND
+                ],
+                $this->testNs, 
+                '2017-01-01'
+            );
             throw $e;
         }
     }
@@ -204,8 +213,11 @@ class DriveVersionerTest extends TestCase
 
         $this->subject->version($this->root->url().'/versionableFile_2017-01-01.txt', $this->testNs, '2017-01-01');
         $this->assertOutputs([
-            DriveVersionerMessages::DEBUG_NS_DIR_CREATED,
-        ]);
+                DriveVersionerMessages::DEBUG_NS_DIR_CREATED,
+            ],
+            $this->testNs, 
+            '2017-01-01'
+        );
     }
 
     public function testCreatesVersionedFileWhenNotExistent() {
@@ -227,22 +239,24 @@ class DriveVersionerTest extends TestCase
                 $this->isInstanceOf(\Google_Service_Drive_DriveFile::class), // http://bit.ly/2iJrYDz
                 $this->callback(
                     function ($filesObject) use ($mockDirectoryId) {
-                        return count($filesObject->parents) === 1
-                            && $filesObject->parents[0] == $mockDirectoryId
+                        return 
+                            substr($filesObject->mimeType, 0, 10) == 'text/plain' // could have charset on there
+                            && count($filesObject->properties) === 2
+                            && $filesObject->properties['discriminator'] == '2017-01-01'
+                            && $filesObject->properties['id'] == md5($this->testNs . '2017-01-01')
+                            && $filesObject->originalFilename == 'versionableFile_2017-01-01.txt'
+                            && $filesObject->keepRevisionForever == true
+                            && $filesObject->uploadType == 'multipart'
                             && $filesObject->name == DriveVersioner::VERSIONED_FILENAME
+                            && count($filesObject->parents) === 1
+                            && $filesObject->parents[0] == $mockDirectoryId
                         ;
                     }
                 )
             ),
             $this->callback( // the $opts when create()
                 function ($opts) {
-                    return substr($opts['mimeType'], 0, 10) == 'text/plain' // could have charset on there
-                        && $opts['uploadType'] == 'multipart'
-                        && $opts['originalFilename'] == 'versionableFile_2017-01-01.txt'
-                        && $opts['keepRevisionForever'] == true
-                        && $opts['properties']['discriminator'] == '2017-01-01'
-                        && $opts['properties']['id'] == md5($this->testNs . '2017-01-01')
-                    ;
+                    return $opts['data'] == '2017-01-01';
                 }
             )
         );
@@ -254,9 +268,12 @@ class DriveVersionerTest extends TestCase
 
         $this->subject->version($this->root->url().'/versionableFile_2017-01-01.txt', $this->testNs, '2017-01-01');
         $this->assertOutputs([
-            DriveVersionerMessages::DEBUG_NS_DIR_FOUND,
-            DriveVersionerMessages::DEBUG_VERSIONED_FILE_CREATED,
-        ]);
+                DriveVersionerMessages::DEBUG_NS_DIR_FOUND,
+                DriveVersionerMessages::DEBUG_VERSIONED_FILE_CREATED,
+            ],
+            $this->testNs, 
+            '2017-01-01'    
+        );
       }
       
       public function testCreatesNewVersion() {
@@ -302,15 +319,19 @@ class DriveVersionerTest extends TestCase
 
         $this->subject->version($this->root->url().'/versionableFile_2017-01-02.txt', $this->testNs, '2017-01-02');
         $this->assertOutputs([
-            DriveVersionerMessages::DEBUG_NS_DIR_FOUND,
-            DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND,
-            DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED,
-        ]);
+                DriveVersionerMessages::DEBUG_NS_DIR_FOUND,
+                DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND,
+                DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED,
+            ],
+            $this->testNs, 
+            '2017-01-02'
+        );
     }
 
-    protected function assertOutputs(array $messages): void {
+    protected function assertOutputs(array $messages, String $ns, String $discriminator): void {
         $allMessages = explode(PHP_EOL, $this->output->fetch());
-        $nonOutputtedMessages = array_filter($messages, function($item) use ($allMessages) {
+        $nonOutputtedMessages = array_filter($messages, function($item) use ($allMessages, $ns, $discriminator) {
+            $messageWithExtras = " | ${ns} : ${discriminator} | $item";
             return (FALSE === array_search($item, $allMessages));
         });
         $this->assertEquals([], $nonOutputtedMessages);

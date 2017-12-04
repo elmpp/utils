@@ -36,6 +36,7 @@ class DriveVersionerTest extends TestCase {
         // n.b. the driveRootId will be for this test directory - http://bit.ly/2jIDTOv
         $this->versioner = new DriveVersioner($driveService, $clientSetup->getDriveRootId());
         $this->versioner->setOutput($this->output = new BufferedOutput);
+        $this->versioner->setVerbosity(2);
     }
 
     /**
@@ -47,13 +48,15 @@ class DriveVersionerTest extends TestCase {
         $finder->files()->name('/\.tar$/')->in(__DIR__ . '/Fixtures/versionables')->sortByName();
         try {
             foreach ($finder as $aFile) {
-                list($ns, $discriminator) = explode('_', basename($aFile->getFilename(), ".php"));
-                print("Uploading {$aFile->getRealPath()}");
+                list($ns, $discriminator) = explode('_', basename($aFile->getFilename(), ".txt.tar"));
+                
+                // print("Uploading {$aFile->getRealPath()} with ns: ${ns} and discriminator: ${discriminator}");
                 $this->versioner->version($aFile->getRealPath(), $ns, $discriminator);
             }
         }
         catch (\Exception $e) {
             var_dump($e);
+            var_dump("Error encountered. Code: {$e->getCode()}\n{$e->getMessage()}");
         }
 
         print($this->output->fetch());
