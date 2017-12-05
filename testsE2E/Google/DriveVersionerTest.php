@@ -26,6 +26,8 @@ class DriveVersionerTest extends TestCase {
      */
     protected $output;
 
+    protected $testNs = 'partridge';
+
     public function setUp() {
         // Get the API client and construct the service object.
         $clientCredentialsDir = __DIR__ . '/Fixtures';
@@ -40,25 +42,53 @@ class DriveVersionerTest extends TestCase {
     }
 
     /**
-     * 
+     * Runs an E2E test on Drive, creating some tar file versioning. 
+     * Relies on the driveRootId being present and its contents being already wiped
      * @return void
      */
     public function testCreatesMultiple() {
-        $finder = new Finder;
-        $finder->files()->name('/\.tar$/')->in(__DIR__ . '/Fixtures/versionables')->sortByName();
         try {
-            foreach ($finder as $aFile) {
-                list($ns, $discriminator) = explode('_', basename($aFile->getFilename(), ".txt.tar"));
-                
-                // print("Uploading {$aFile->getRealPath()} with ns: ${ns} and discriminator: ${discriminator}");
-                $this->versioner->version($aFile->getRealPath(), $ns, $discriminator);
-            }
+            $this->doVersioning();
+            $revisionList = $this->doListing();
         }
         catch (\Exception $e) {
             var_dump($e);
             var_dump("Error encountered. Code: {$e->getCode()}\n{$e->getMessage()}");
         }
 
+        $revisions = $revisionList->revisions;
+
+        $this->assertRevisionValues($revisions[0]);
+        $this->assertCount(3, $revisions, "Perhaps we didn't clear down the drive test dir?");
+
         print($this->output->fetch());
+    }
+
+    protected function assertRevisionValues(\Google_Service_Drive_Revision $revision) {
+        $this->assertTrue($revision->keepForever, "Revisions should have been set to keep forever");
+        $this->assertEquals($revision->originalFilename, "Google_Service_Drive_Revision.txt.tar");
+
+    }
+
+    protected function doListing(): ?\Google_Service_Drive_RevisionList {
+        $revisionList = $this->versioner->list($this->testNs);
+        return $revisionList;
+    }
+    
+    protected function doVersioning() {
+        
+        $finder = new Finder;
+        $finder->files()->name('/\.tar$/')->in(__DIR__ . '/Fixtures/versionables')->sortByName();
+        
+        $ids = [];
+        foreach ($finder as $aFile) {
+            list($ns, $discriminator) = explode('_', basename($aFile->getFilename(), ".txt.tar"));
+            
+            // print("Uploading {$aFile->getRealPath()} with ns: ${ns} and discriminator: ${discriminator}");
+            $lastUpload = $this->versioner->version($aFile->getRealPath(), $this->testNs, $discriminator);
+            $ids[] = $lastUpload->getId();
+        }
+
+        return; // not any need for anything
     }
 }

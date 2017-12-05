@@ -16,6 +16,8 @@ class DriveVersioner
 {
     const MIME_DIR = 'application/vnd.google-apps.folder';
     const VERSIONED_FILENAME = 'versioned';
+    const MODE_VERSION = 'VERSION';
+    const MODE_LIST = 'LIST';
 
   /**
    * @var \Google_Service_Drive
@@ -43,6 +45,11 @@ class DriveVersioner
      * @var String
      */
     protected $discriminator;
+    /**
+     * VERSION | LIST
+     * @var String
+     */
+    protected $mode = self::MODE_VERSION;
 
     /**
      * 1 = silent
@@ -78,6 +85,7 @@ class DriveVersioner
         
         $this->ns = $ns;
         $this->discriminator = $discriminator;
+        $this->mode = self::MODE_VERSION;
 
         if (!is_readable($fileLoc)) {
             $this->output(DriveVersionerMessages::VERSIONABLE_FILE_NOT_READABLE);
@@ -93,17 +101,66 @@ class DriveVersioner
 
         if ($versionedFile = $this->queryForVersioned($driveDir)) {
             $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND);
+            $this->createUpdate($versionedFile, $driveDir, $fileLoc);
+            $this->output(DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED);
         } else {
             $versionedFile = $this->createVersioned($driveDir, $fileLoc);
             $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_CREATED);
         }
-        
-        $this->createUpdate($versionedFile, $driveDir, $fileLoc);
-        $this->output(DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED);
 
         return $versionedFile;
     }
+  
+    /**
+   * Lists the versions of a versioned
+   *
+   * @param string $ns      The version namespace
+   *
+   * @throws DriveVersionerException
+   * @return \Google_Service_Drive_FileList
+   */
+    public function list(String $ns): ?\Google_Service_Drive_RevisionList {
+        
+        $this->ns = $ns;
+        $this->discriminator = '';
+        $this->mode = self::MODE_LIST;
+        
+        if (!$driveDir = $this->queryForDirectory()) {
+            $this->output(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
+            throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
+        }
+        $this->output(DriveVersionerMessages::DEBUG_NS_DIR_FOUND);
+        
+        if (!$versionedFile = $this->queryForVersioned($driveDir)) {
+            $this->output(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
+            throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
+        }
+        $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND);
 
+        return $this->queryForVersionList($versionedFile);
+    }
+
+    /**
+     * @param \Google_Service_Drive_DriveFile $versionedFile
+     * @return \Google_Service_Drive_RevisionList
+     */
+    protected function queryForVersionList(\Google_Service_Drive_DriveFile $versionedFile): ?\Google_Service_Drive_RevisionList {
+        try {
+            /** @var \Google_Service_Drive_FileList $fileList */
+            return $this->client->revisions->listRevisions(
+                $versionedFile->getId(),
+                [ 
+                    'fields' => 'kind,revisions' // http://bit.ly/2ioGcpC
+                ]
+            );
+        }
+        catch (\Google_Exception $e) {
+            $this->filterCommonExceptions($e);
+        }
+
+        return $list->revisions[0] ?? null;
+    }
+    
     protected function queryForVersioned(\Google_Service_Drive_DriveFile $nsDir): ?\Google_Service_Drive_DriveFile {
         try {
             /** @var \Google_Service_Drive_FileList $fileList */
@@ -253,12 +310,12 @@ class DriveVersioner
                 $opts
             );
         } catch (\Google_Exception $e) {
-            $this->filterCommonExceptions($e);
+            $this->output(DriveVersionerMessages::DRIVE_CANNOT_CREATE_DIR);
             if ($e->getCode() == 404) { // the rootDrive directory isn't found
                 $this->output(DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND);
                 throw new DriveVersionerException(DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND.$this->driveRootId, $e->getCode(), $e);
             }
-            $this->output(DriveVersionerMessages::DRIVE_CANNOT_CREATE_DIR);
+            $this->filterCommonExceptions($e);
             throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_CREATE_DIR.$e->getMessage(), $e->getCode(), $e);
         }
     }
@@ -323,7 +380,7 @@ class DriveVersioner
     
     protected function output(String $message, Int $verbosity = 2): self {
         if ($this->verbosity >= $verbosity) {
-            $this->output->writeln(" | {$this->ns} : {$this->discriminator} | $message");
+            $this->output->writeln(" | {$this->mode} : {$this->ns} : {$this->discriminator} | $message");
         }
         return $this;
     }

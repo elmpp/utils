@@ -13,6 +13,7 @@ class DriveVersionerMessages
     const VERSIONABLE_FILE_NOT_READABLE = 'The file to version is not readable. ';
     const DUPLICATE_NAMESPACE_DIRECTORY = 'Found multiple directories for the namespace. This is bad. ';
     const DUPLICATE_VERSIONED_FILE = 'Found multiple files for the versioned file. This is bad. ';
+    const DRIVE_CANNOT_LIST_VERSIONED_FILE = 'The versions cannot be listed. This may be due to missing versioned file, namespace directory or incorrect root. ';
 
     const SETUP_CREDENTIALS_FILE_NOT_FOUND = 'Credential files were expected. See here for more info - http://bit.ly/2jHemoK. ';
 

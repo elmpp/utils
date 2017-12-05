@@ -68,11 +68,9 @@ class DriveVersionerTest extends TestCase
         ->getMock();
         $this->filesDriveClient = $this->getMockBuilder(\Google_Service_Drive_Resource_Files::class)
         ->disableOriginalConstructor()
-        // ->setMethods(['listFiles', 'create'])
         ->getMock();
         $this->revisionsDriveClient = $this->getMockBuilder(\Google_Service_Drive_Resource_Revisions::class)
         ->disableOriginalConstructor()
-        // ->setMethods(['list', 'get'])
         ->getMock();
         $driveClient->files = $this->filesDriveClient;
         $driveClient->revisions = $this->revisionsDriveClient;
@@ -91,6 +89,96 @@ class DriveVersionerTest extends TestCase
         $this->subject = new DriveVersioner($this->driveClient, $this->driveRootId);
 
         $this->subject->setOutput($this->output = new BufferedOutput);
+    }
+    
+    public function testListVersions() {
+        $mockNsDir = new \Google_Service_Drive_DriveFile([
+            'id' => 'test-dir-id'
+        ]); // the ns directory
+        $mockNsDirList = new \Google_Service_Drive_FileList();
+        $mockNsDirList->setFiles([$mockNsDir]);
+        $mockVersionedFile = new \Google_Service_Drive_DriveFile([
+            'id' => 'test-versioned-id'
+        ]);
+        $mockListForVersioned = new \Google_Service_Drive_FileList();
+        $mockListForVersioned->setFiles([$mockVersionedFile]);
+
+        $mockVersionListList = new \Google_Service_Drive_RevisionList;
+        $mockVersions = [
+            $this->createMockVersion(['originalFilename' => 'versionableFile_2017-01-01.txt']),
+            $this->createMockVersion(['originalFilename' => 'versionableFile_2017-01-02.txt']),
+        ];
+        $mockVersionListList->setRevisions($mockVersions);
+    
+        $this->filesDriveClient
+        ->method('listFiles')
+        ->will($this->onConsecutiveCalls(
+            $mockNsDirList,
+            $mockListForVersioned
+        ));
+        $this->revisionsDriveClient
+        ->method('listRevisions')
+        ->with(
+            'test-versioned-id',
+            $this->callback(
+                // http://bit.ly/2ioGcpC
+                function($opts) {
+                    $fields = $opts['fields'] ?? null;
+                    if (!($opts['fields'] ?? null)) return false;
+                    $fields = explode(',', $opts['fields']);
+                    return false !== array_search('kind', $fields)
+                        && false !== array_search('revisions', $fields)
+                    ;
+                }
+            )
+        )
+        ->willReturn(
+            $mockVersionListList
+        );
+        
+        $revisions = $this->subject->list($this->testNs);
+        $this->assertCount(2, $revisions->revisions);
+        $this->assertTrue($revisions->revisions[0]->keepForever);
+
+        $this->assertOutputs([
+                DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND,
+            ],
+            $this->testNs,
+            '',
+            DriveVersioner::MODE_LIST
+        );
+    }
+    public function testListVersionsFileNotExist() {
+        $mockNsDir = new \Google_Service_Drive_DriveFile([
+            'id' => 'mock-ns-dir-id'
+        ]); // the ns directory
+        $mockNsDirList = new \Google_Service_Drive_FileList();
+        $mockNsDirList->setFiles([$mockNsDir]);
+        $mockEmptyListForVersioned = new \Google_Service_Drive_FileList();
+
+        $this->filesDriveClient
+        ->method('listFiles')
+        ->will($this->onConsecutiveCalls(
+            $mockNsDirList,
+            $mockEmptyListForVersioned
+        ));
+
+        $this->expectException(DriveVersionerException::CLASS);
+        $this->expectExceptionMessageRegExp('/^'.DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE.'.*$/');
+        
+        try {
+            $this->subject->list($this->testNs);
+        }
+        catch (\Exception $e) {
+            $this->assertOutputs([
+                    DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE,
+                ],
+                $this->testNs, 
+                '',
+                DriveVersioner::MODE_LIST
+            );
+            throw $e;
+        }
     }
 
     public function testFileNotExist() {
@@ -116,9 +204,10 @@ class DriveVersionerTest extends TestCase
         $this->filesDriveClient
         ->method('listFiles')
         ->will($this->throwException(
-            new \Google_Exception( // https://drive.google.com/file/d/1_-NbpKQiGWx4MAYmxlZXymy6kbc7rvbM/view?usp=sharing
-                "The user does not have sufficient permissions for this file.",
-                403
+            $this->createGoogleServiceException(
+                "The user does not have sufficient permissions for this file.", 
+                403, 
+                'insufficientFilePermissions'
             )
         ));
         
@@ -138,21 +227,26 @@ class DriveVersionerTest extends TestCase
             throw $e;
         }
     }
-    
-    public function testRootDirNotExistent() {
+
+    public function testRootDirNonExistent() {
+        $mockNsDirList = new \Google_Service_Drive_FileList();
+
         $this->filesDriveClient
         ->method('listFiles')
-        ->willReturn(null);
+        ->willReturn($mockNsDirList);
         
         $this->filesDriveClient
         ->expects($this->once())
         ->method('create')
-        ->will($this->throwException(
-            new \Google_Exception( // https://drive.google.com/file/d/18bduPSEZoh151nRV24PDIQDYiOTlSzEo/view?usp=sharing
-                "File not found: {$this->driveRootId}.",
-                404
+        ->will(
+            $this->throwException(
+                    $this->createGoogleServiceException(
+                    "File not found: {$this->driveRootId}.", 
+                    404, 
+                    'parentNotAFolder'
+                )
             )
-        ));
+        );
         
         $this->expectException(DriveVersionerException::CLASS);
         $this->expectExceptionMessageRegExp('/^'.DriveVersionerMessages::DRIVE_ROOT_NOT_FOUND.'.*$/');
@@ -181,9 +275,11 @@ class DriveVersionerTest extends TestCase
     }
 
     public function testCreatesDirectoryWhenNotExistent() {
+        $mockNsDirList = new \Google_Service_Drive_FileList();
+
         $this->filesDriveClient
         ->method('listFiles')
-        ->willReturn(null);
+        ->willReturn($mockNsDirList);
         $this->filesDriveClient
         ->expects($this->atLeastOnce()) // create() for dir and versioned file
         ->method('create')
@@ -200,13 +296,14 @@ class DriveVersionerTest extends TestCase
             ),
             $this->callback( // the $opts when create()
                 function ($opts) {
-                    return $opts['mimeType'] == DriveVersioner::MIME_DIR;
+                    return $opts['mimeType'] == DriveVersioner::MIME_DIR
+                    ;
                 }
             )
         )
         ->will($this->returnArgument(0));
         $this->filesDriveClient
-          ->expects($this->once())
+          ->expects($this->never())
           ->method('update')
           ->willReturn(new \Google_Service_Drive_DriveFile)
         ;
@@ -261,7 +358,7 @@ class DriveVersionerTest extends TestCase
             )
         );
         $this->filesDriveClient
-          ->expects($this->once())
+          ->expects($this->never())
           ->method('update')
           ->willReturn(new \Google_Service_Drive_DriveFile)
         ;
@@ -300,18 +397,23 @@ class DriveVersionerTest extends TestCase
           ->expects($this->once())
           ->method('update')
           ->with(
-            $mockVersionedFile->id, 
-            $mockNewVersionedFile, 
+            $mockVersionedFile->id,
+            $this->callback(
+                function ($filesObject) use ($mockDirectoryId) {
+                    return 
+                        substr($filesObject->mimeType, 0, 10) == 'text/plain' // could have charset on there
+                        && count($filesObject->properties) === 2
+                        && $filesObject->properties['discriminator'] == '2017-01-02'
+                        && $filesObject->properties['id'] == md5($this->testNs . '2017-01-02')
+                        && $filesObject->originalFilename == 'versionableFile_2017-01-02.txt'
+                        && $filesObject->keepRevisionForever == true
+                        && $filesObject->uploadType == 'multipart'
+                        && $filesObject->name == DriveVersioner::VERSIONED_FILENAME
+                    ;
+                }
+            ),
             [
-            //   'data' => '2017-01-02', // upload's second file's data
-                'mimeType' => 'text/plain; charset=us-ascii', // should inspect the file's mimetype
-                'uploadType' => 'multipart', // allows file + metadata in one
-                'originalFilename' => 'versionableFile_2017-01-02.txt',
-                'properties' => [
-                  'discriminator' => '2017-01-02', // will record this in the public metadata
-                  'id' => md5($this->testNs . '2017-01-02')
-                ],
-                'keepRevisionForever' => true, // http://bit.ly/2jGtAuu
+                'data' => '2017-01-02', // upload's second file's data
             ]
           )
           ->will($this->returnArgument(1))
@@ -328,11 +430,54 @@ class DriveVersionerTest extends TestCase
         );
     }
 
-    protected function assertOutputs(array $messages, String $ns, String $discriminator): void {
+    /**
+     *  - // https://drive.google.com/file/d/1pFr9QhtZtWYgcjxWD5NgCUKZ42Hq6D42/view?usp=sharing
+     * @param array $fields
+     * @return \Google_Service_Drive_Revision
+     */
+    protected function createMockVersion(array $fields = []): \Google_Service_Drive_Revision {
+        $withDefaults = array_replace_recursive(
+            [
+                'kind' => 'drive#revision',
+                'id' => '0B8xNn0n8vI8YS2prU00vRnJvNWoxWmdNc25WVkFCcWk5' . rand(0, 100000),
+                'mimeType' => 'application/x-tar',
+                'modifiedTime' => '2017-12-04T20:19:52.122Z',
+                'keepForever' => true,
+                'published' => false,
+                'lastModifyingUser' => 
+                array (
+                  'kind' => 'drive#user',
+                  'displayName' => 'Matthew Penrice',
+                  'photoLink' => 'https://lh5.googleusercontent.com/-MrIWaGeRiL8/AAAAAAAAAAI/AAAAAAAAAW8/5o73TOjw_Y4/s64/photo.jpg',
+                  'me' => true,
+                  'permissionId' => '16986143399669889879',
+                  'emailAddress' => 'matthew.penrice@gmail.com',
+                ),
+                'originalFilename' => 'partridge_2017-12-03.txt.tar',
+                'md5Checksum' => '6a623242d5a6c07f2736d3d9a268d8a8',
+                'size' => '2048',
+            ],
+            $fields
+        );
+        return new \Google_Service_Drive_Revision($withDefaults);
+    }
+
+    protected function createGoogleServiceException($message, $code, $reason): \Google_Service_Exception {
+        $errors = [
+            [
+                'reason' => $reason,
+                'message' => $message,
+                'domain' => 'global'
+            ]
+        ];
+        return new \Google_Service_Exception($message, $code, null, $errors); // https://drive.google.com/file/d/1_-NbpKQiGWx4MAYmxlZXymy6kbc7rvbM/view
+    }
+
+    protected function assertOutputs(array $messages, String $ns, String $discriminator, $mode = DriveVersioner::MODE_VERSION): void {
         $allMessages = explode(PHP_EOL, $this->output->fetch());
-        $nonOutputtedMessages = array_filter($messages, function($item) use ($allMessages, $ns, $discriminator) {
-            $messageWithExtras = " | ${ns} : ${discriminator} | $item";
-            return (FALSE === array_search($item, $allMessages));
+        $nonOutputtedMessages = array_filter($messages, function($item) use ($allMessages, $ns, $discriminator, $mode) {
+            $messageWithExtras = " | ${mode} : ${ns} : ${discriminator} | $item";
+            return (FALSE === array_search($messageWithExtras, $allMessages));
         });
         $this->assertEquals([], $nonOutputtedMessages);
     }
