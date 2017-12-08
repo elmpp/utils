@@ -49,7 +49,7 @@ class DriveVersionerTest extends TestCase {
     public function testCreatesMultiple() {
         try {
             $this->doVersioning();
-            $revisionList = $this->doListing();
+            $revisionList = $this->doGetListing();
         }
         catch (\Exception $e) {
             var_dump($e);
@@ -57,11 +57,12 @@ class DriveVersionerTest extends TestCase {
         }
 
         $revisions = $revisionList->revisions;
+        print($this->output->fetch());
+// var_dump($revisions);
 
         $this->assertRevisionValues($revisions[0]);
         $this->assertCount(3, $revisions, "Perhaps we didn't clear down the drive test dir?");
 
-        print($this->output->fetch());
     }
 
     protected function assertRevisionValues(\Google_Service_Drive_Revision $revision) {
@@ -70,7 +71,7 @@ class DriveVersionerTest extends TestCase {
 
     }
 
-    protected function doListing(): ?\Google_Service_Drive_RevisionList {
+    protected function doGetListing(): ?\Google_Service_Drive_RevisionList {
         $revisionList = $this->versioner->list($this->testNs);
         return $revisionList;
     }
@@ -78,7 +79,7 @@ class DriveVersionerTest extends TestCase {
     protected function doVersioning() {
         
         $finder = new Finder;
-        $finder->files()->name('/\.tar$/')->in(__DIR__ . '/Fixtures/versionables')->sortByName();
+        $finder->files()->name('/\.tar.gz$/')->in(__DIR__ . '/Fixtures/versionables')->sortByName();
         
         $ids = [];
         foreach ($finder as $aFile) {

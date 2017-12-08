@@ -22,5 +22,9 @@ class DriveVersionerMessages
     const DEBUG_NS_DIR_FOUND = 'Namespace directory already existent. ';
     const DEBUG_VERSIONED_FILE_CREATED = 'The versioned file has been created. ';
     const DEBUG_VERSIONED_FILE_FOUND = 'The versioned file already existent. ';
+    const DEBUG_UPDATING_REVISION = 'Updating specific version. ';
+    const DEBUG_LISTING_VERSIONS_FOR_VERSIONED = 'Querying version list for file. ';
     const DEBUG_NEW_VERSION_CREATED = 'New version of the versioned file has been created. ';
+    const DEBUG_CACHE_HIT = 'Cache hit. ';
+    
 }

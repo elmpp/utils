@@ -4,7 +4,9 @@ namespace Partridge\Utils\Google;
 
 use Partridge\Utils\Util;
 use Partridge\Utils\ArrayUtil;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Console\Output\Output;
+use Symfony\Component\Cache\Simple\ArrayCache;
 use Partridge\Utils\Google\DriveVersionerMessages;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
@@ -17,7 +19,7 @@ class DriveVersioner
     const MIME_DIR = 'application/vnd.google-apps.folder';
     const VERSIONED_FILENAME = 'versioned';
     const MODE_VERSION = 'VERSION';
-    const MODE_LIST = 'LIST';
+    const MODE_REVISIONS = 'REVISIONS';
 
   /**
    * @var \Google_Service_Drive
@@ -34,6 +36,11 @@ class DriveVersioner
      * @var Output
      */
     protected $output;
+    /**
+     * symfony cache
+     * @var CacheInterface
+     */
+    protected $cache;
 
     /**
      * The current $ns
@@ -63,6 +70,7 @@ class DriveVersioner
         $this->driveRootId = $driveRootId;
 
         $this->output = new ConsoleOutput;
+        $this->cache = new ArrayCache;
     }
 
   /**
@@ -123,8 +131,10 @@ class DriveVersioner
         
         $this->ns = $ns;
         $this->discriminator = '';
-        $this->mode = self::MODE_LIST;
+        $this->mode = self::MODE_REVISIONS;
         
+        if ($cached = $this->checkCache($cacheKey = "list-{$this->ns}")) return $cached;
+
         if (!$driveDir = $this->queryForDirectory()) {
             $this->output(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
             throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
@@ -136,15 +146,63 @@ class DriveVersioner
             throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
         }
         $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND);
+        $this->output(DriveVersionerMessages::DEBUG_LISTING_VERSIONS_FOR_VERSIONED.$versionedFile->getId());
+        
+        $versionList = $this->queryForVersionList($versionedFile);
+        $this->cache->set($cacheKey, $versionList);
+        return $versionList;
+    }
 
-        return $this->queryForVersionList($versionedFile);
+    /**
+     * Ensures that all revisions for a ns are in good order. Shouldn't really be 
+     * needed but don't wanna be losing data
+     * 
+     * @param String $ns
+     * @return void
+     */
+    public function updateAllRevisions(String $ns): void {
+
+        $this->ns = $ns;
+        $this->discriminator = '';
+        $this->mode = self::MODE_REVISIONS;
+        
+        $allRevisions = $this->list($ns);
+        if (!count($allRevisions)) { // no versioned or no revisions
+            return;
+        }
+        $versioned = $this->cache->get("queryForVersioned-{$this->ns}"); // should be present
+        foreach ($allRevisions as $aRevision) {
+            $this->updateRevision($versioned, $aRevision);
+        }
+
+    }
+
+    protected function updateRevision(\Google_Service_Drive_DriveFile $versioned, \Google_Service_Drive_Revision $revision): \Google_Service_Drive_Revision {
+       
+        try {
+            $this->output(DriveVersionerMessages::DEBUG_UPDATING_REVISION . $revision->getId());
+            return $this->client->revisions->update(
+                $versioned->getId(),
+                $revision->getId(),
+                $revision,
+                [
+                    'keepForever' => true,
+                ]
+            );
+        }
+        catch (\Google_Exception $e) {
+            $this->filterCommonExceptions($e);
+        }
     }
 
     /**
      * @param \Google_Service_Drive_DriveFile $versionedFile
      * @return \Google_Service_Drive_RevisionList
      */
-    protected function queryForVersionList(\Google_Service_Drive_DriveFile $versionedFile): ?\Google_Service_Drive_RevisionList {
+    protected function queryForVersionList(\Google_Service_Drive_DriveFile $versionedFile): \Google_Service_Drive_RevisionList {
+        
+        if ($cached = $this->checkCache($cacheKey = "queryForVersionList-{$this->ns}")) return $cached;
+
         try {
             /** @var \Google_Service_Drive_FileList $fileList */
             return $this->client->revisions->listRevisions(
@@ -158,28 +216,38 @@ class DriveVersioner
             $this->filterCommonExceptions($e);
         }
 
-        return $list->revisions[0] ?? null;
+        $ret = $list->revisions;
+        $this->cache->set($cacheKey, $ret);
+        return $ret;
     }
     
     protected function queryForVersioned(\Google_Service_Drive_DriveFile $nsDir): ?\Google_Service_Drive_DriveFile {
+        
+        if ($cached = $this->checkCache($cacheKey = "queryForVersioned-{$this->ns}")) return $cached;
+        
         try {
             /** @var \Google_Service_Drive_FileList $fileList */
             $fileList = $this->client->files->listFiles([
-            'q' => "'{$nsDir->id}' in parents and trashed = false and name = '" . self::VERSIONED_FILENAME . "'",
-            ]);
-        }
-        catch (\Google_Exception $e) {
-            $this->filterCommonExceptions($e);
+                'q' => "'{$nsDir->id}' in parents and trashed = false and name = '" . self::VERSIONED_FILENAME . "'",
+                ]);
+            }
+            catch (\Google_Exception $e) {
+                $this->filterCommonExceptions($e);
+            }
+            
+            if ($fileList && count($fileList->files) > 1) {
+                throw new DriveVersionerException(DriveVersionerMessages::DUPLICATE_VERSIONED_FILE."Namespace: {$nsDir->name}");
         }
         
-        if ($fileList && count($fileList->files) > 1) {
-            throw new DriveVersionerException(DriveVersionerMessages::DUPLICATE_VERSIONED_FILE."Namespace: {$nsDir->name}");
-        }
-        
-        return $fileList->files[0] ?? null;
+        $ret = $fileList->files[0] ?? null;
+        $this->cache->set($cacheKey, $ret);
+        return $ret;
     }
     
     protected function queryForDirectory(): ?\Google_Service_Drive_DriveFile {
+        
+        if ($cached = $this->checkCache($cacheKey = "queryForDirectory-{$this->ns}")) return $cached;
+        
         try {
             $q = "'{$this->driveRootId}' in parents and trashed = false and name = '{$this->ns}' and mimeType='".self::MIME_DIR."'"; // http://bit.ly/2Bu19ro
             // $this->output("queryForDirectory query: ${q}");
@@ -197,7 +265,9 @@ class DriveVersioner
             throw new DriveVersionerException(DriveVersionerMessages::DUPLICATE_NAMESPACE_DIRECTORY."Namespace: ${ns}");
         }
 
-        return $fileList->files[0] ?? null;
+        $ret = $fileList->files[0] ?? null;
+        $this->cache->set($cacheKey, $ret);
+        return $ret;
     }
 
     /**
@@ -318,6 +388,14 @@ class DriveVersioner
             $this->filterCommonExceptions($e);
             throw new DriveVersionerException(DriveVersionerMessages::DRIVE_CANNOT_CREATE_DIR.$e->getMessage(), $e->getCode(), $e);
         }
+    }
+
+    protected function checkCache(String $cacheKey): ?Object {
+        if ($cached = $this->cache->get($cacheKey)) {
+            $this->output(DriveVersionerMessages::DEBUG_CACHE_HIT . $cacheKey);
+            return $cached;
+        }
+        return null;
     }
     
     /**

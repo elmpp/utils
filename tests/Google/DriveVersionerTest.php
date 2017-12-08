@@ -90,6 +90,116 @@ class DriveVersionerTest extends TestCase
 
         $this->subject->setOutput($this->output = new BufferedOutput);
     }
+
+    /**
+     * Drive does not listen to our "keepRevisionForever" request when calling files.update
+     * We will have to offer a way to update the revisions for a versionable.
+     * @return void
+     */
+    public function testUpdateRevisions() {
+        
+        $this->createMocksUpToVersionList();
+        
+        $this->revisionsDriveClient
+        ->expects($this->once()) // ensure we cache the revision listings for a file
+        ->method('listRevisions')
+        ;
+
+        $this->revisionsDriveClient
+        ->expects($this->exactly(2)) // ensure we cache the revision listings for a file
+        ->method('update')
+        ->withConsecutive(
+            [
+                'test-versioned-id',
+                'revision-id-1',
+                $this->isInstanceOf(\Google_Service_Drive_Revision::CLASS),
+                [
+                    'keepForever' => true,
+                ],
+            ],
+            [
+                'test-versioned-id',
+                'revision-id-2',
+                $this->isInstanceOf(\Google_Service_Drive_Revision::CLASS),
+                [
+                    'keepForever' => true,
+                ],
+            ]
+        )
+        ->will(
+            $this->returnArgument(2)
+        )
+        ;
+
+        $this->subject->updateAllRevisions($this->testNs);
+
+        $this->assertOutputs([
+            DriveVersionerMessages::DEBUG_UPDATING_REVISION . "revision-id-1",
+            DriveVersionerMessages::DEBUG_UPDATING_REVISION . "revision-id-2",
+        ],
+        $this->testNs,
+        '',
+        DriveVersioner::MODE_REVISIONS
+        );
+    }
+
+    protected function createMocksUpToVersionList() {
+        $mockNsDir = new \Google_Service_Drive_DriveFile([
+            'id' => 'test-dir-id'
+        ]); // the ns directory
+        $mockNsDirList = new \Google_Service_Drive_FileList();
+        $mockNsDirList->setFiles([$mockNsDir]);
+        $mockVersionedFile = new \Google_Service_Drive_DriveFile([
+            'id' => 'test-versioned-id'
+        ]);
+        $mockListForVersioned = new \Google_Service_Drive_FileList();
+        $mockListForVersioned->setFiles([$mockVersionedFile]);
+
+        $mockVersionListList = new \Google_Service_Drive_RevisionList;
+        $mockVersions = [
+            $this->createMockVersion(
+                [
+                    'id' => 'revision-id-1',
+                    'originalFilename' => 'versionableFile_2017-01-01.txt',
+                    ]
+                ),
+                $this->createMockVersion(
+                    [
+                    'id' => 'revision-id-2',
+                    'originalFilename' => 'versionableFile_2017-01-02.txt',
+                ]
+            ),
+        ];
+        $mockVersionListList->setRevisions($mockVersions);
+    
+        $this->filesDriveClient
+        ->method('listFiles')
+        ->will($this->onConsecutiveCalls(
+            $mockNsDirList,
+            $mockListForVersioned
+        ));
+        $this->revisionsDriveClient
+        ->method('listRevisions')
+        // ->with(
+        //     'test-versioned-id',
+        //     $this->callback(
+        //         // http://bit.ly/2ioGcpC
+        //         function($opts) {
+        //             $fields = $opts['fields'] ?? null;
+        //             if (!($opts['fields'] ?? null)) return false;
+        //             $fields = explode(',', $opts['fields']);
+        //             return false !== array_search('kind', $fields)
+        //                 && false !== array_search('revisions', $fields)
+        //             ;
+        //         }
+        //     )
+        // )
+        ->willReturn(
+            $mockVersionListList
+        );
+
+
+    }
     
     public function testListVersions() {
         $mockNsDir = new \Google_Service_Drive_DriveFile([
@@ -117,6 +227,7 @@ class DriveVersionerTest extends TestCase
             $mockListForVersioned
         ));
         $this->revisionsDriveClient
+        ->expects($this->once())
         ->method('listRevisions')
         ->with(
             'test-versioned-id',
@@ -145,7 +256,7 @@ class DriveVersionerTest extends TestCase
             ],
             $this->testNs,
             '',
-            DriveVersioner::MODE_LIST
+            DriveVersioner::MODE_REVISIONS
         );
     }
     public function testListVersionsFileNotExist() {
@@ -175,7 +286,7 @@ class DriveVersionerTest extends TestCase
                 ],
                 $this->testNs, 
                 '',
-                DriveVersioner::MODE_LIST
+                DriveVersioner::MODE_REVISIONS
             );
             throw $e;
         }
@@ -333,7 +444,13 @@ class DriveVersionerTest extends TestCase
         ->willReturn(new \Google_Service_Drive_DriveFile())
         ->with(
             $this->logicalAnd(
-                $this->isInstanceOf(\Google_Service_Drive_DriveFile::class), // http://bit.ly/2iJrYDz
+                $this->callback(
+                    function ($filesObject) {
+                        return ($filesObject instanceof \Google_Service_Drive_DriveFile) // http://bit.ly/2iJrYDz
+                            // && $filesObject-keepRevisionForever == true
+                        ;
+                    }
+                ),
                 $this->callback(
                     function ($filesObject) use ($mockDirectoryId) {
                         return 
