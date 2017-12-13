@@ -14,4 +14,3 @@ use Partridge\Utils\Google\GoogleClientSetup;
 $clientCredentialsDir = __DIR__ . '/../../../testsE2E/Google/Fixtures';
 $clientSetup = new GoogleClientSetup($clientCredentialsDir);
 $clientSetup->recreateCredentials();
-

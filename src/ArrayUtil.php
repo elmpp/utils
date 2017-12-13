@@ -2,7 +2,8 @@
 
 namespace Partridge\Utils;
 
-class ArrayUtil {
+class ArrayUtil
+{
 
   /*
    * Returns the diff of 2 arrays but using the values of the second
@@ -11,11 +12,11 @@ class ArrayUtil {
    * http://php.net/manual/en/function.array-diff-key.php\
    * http://php.net/manual/en/function.array-flip.php
    */
-  public static function arrayDiffKeyByValues($array1, $array2) {
+    public static function arrayDiffKeyByValues($array1, $array2) {
 
-    // @todo validate the values of array2 as being valid keys
-    return array_diff_key($array1, array_flip($array2));
-  }
+      // @todo validate the values of array2 as being valid keys
+        return array_diff_key($array1, array_flip($array2));
+    }
 
   /**
    * simple util for removing and returning a value from an array by key, returning default if not present
@@ -23,13 +24,13 @@ class ArrayUtil {
    * @param      $key
    * @param null $default
    */
-  public static function arrayPluck(&$array, $key, $default = null) {
+    public static function arrayPluck(&$array, $key, $default = null) {
 
-    if (!isset($array[$key])) {
-      return $default;
+        if (!isset($array[$key])) {
+            return $default;
+        }
+        $value = $array[$key];
+        unset($array[$key]);
+        return $value;
     }
-    $value = $array[$key];
-    unset($array[$key]);
-    return $value;
-  }
 }

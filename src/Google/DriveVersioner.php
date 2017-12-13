@@ -111,11 +111,11 @@ class DriveVersioner
             $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND);
 
             // need to check whether the versioned file already exists. Unfortunately, there is no query facility within revisions
-            // we shall use the filename to determine whether it's been uploaded 
+            // we shall use the filename to determine whether it's been uploaded
             // @todo - perhaps combine with an md5 hash?
             $filename = basename($fileLoc);
             $revisionList = $this->queryForVersionList($versionedFile);
-            $alreadyVersioned = array_filter($revisionList->getRevisions(), function(\Google_Service_Drive_Revision $item) use ($filename) {
+            $alreadyVersioned = array_filter($revisionList->getRevisions(), function (\Google_Service_Drive_Revision $item) use ($filename) {
                 return $filename === $item->getOriginalFilename();
             });
             if (count($alreadyVersioned)) {
@@ -147,7 +147,9 @@ class DriveVersioner
         $this->discriminator = '';
         $this->mode = self::MODE_REVISIONS;
         
-        if ($cached = $this->checkCache($cacheKey = "list-{$this->ns}")) return $cached;
+        if ($cached = $this->checkCache($cacheKey = "list-{$this->ns}")) {
+            return $cached;
+        }
 
         if (!$driveDir = $this->queryForDirectory()) {
             $this->output(DriveVersionerMessages::DRIVE_CANNOT_LIST_VERSIONED_FILE);
@@ -168,9 +170,9 @@ class DriveVersioner
     }
 
     /**
-     * Ensures that all revisions for a ns are in good order. Shouldn't really be 
+     * Ensures that all revisions for a ns are in good order. Shouldn't really be
      * needed but don't wanna be losing data
-     * 
+     *
      * @param String $ns
      * @return void
      */
@@ -188,7 +190,6 @@ class DriveVersioner
         foreach ($allRevisions as $aRevision) {
             $this->updateRevision($versioned, $aRevision);
         }
-
     }
 
     protected function updateRevision(\Google_Service_Drive_DriveFile $versioned, \Google_Service_Drive_Revision $revision): \Google_Service_Drive_Revision {
@@ -203,8 +204,7 @@ class DriveVersioner
                     'keepForever' => true,
                 ]
             );
-        }
-        catch (\Google_Exception $e) {
+        } catch (\Google_Exception $e) {
             $this->filterCommonExceptions($e);
         }
     }
@@ -215,18 +215,19 @@ class DriveVersioner
      */
     protected function queryForVersionList(\Google_Service_Drive_DriveFile $versionedFile): \Google_Service_Drive_RevisionList {
         
-        if ($cached = $this->checkCache($cacheKey = "queryForVersionList-{$this->ns}")) return $cached;
+        if ($cached = $this->checkCache($cacheKey = "queryForVersionList-{$this->ns}")) {
+            return $cached;
+        }
 
         try {
             /** @var \Google_Service_Drive_FileList $fileList */
             return $this->client->revisions->listRevisions(
                 $versionedFile->getId(),
-                [ 
+                [
                     'fields' => 'kind,revisions' // http://bit.ly/2ioGcpC
                 ]
             );
-        }
-        catch (\Google_Exception $e) {
+        } catch (\Google_Exception $e) {
             $this->filterCommonExceptions($e);
         }
 
@@ -237,20 +238,21 @@ class DriveVersioner
     
     protected function queryForVersioned(\Google_Service_Drive_DriveFile $nsDir): ?\Google_Service_Drive_DriveFile {
         
-        if ($cached = $this->checkCache($cacheKey = "queryForVersioned-{$this->ns}")) return $cached;
+        if ($cached = $this->checkCache($cacheKey = "queryForVersioned-{$this->ns}")) {
+            return $cached;
+        }
         
         try {
             /** @var \Google_Service_Drive_FileList $fileList */
             $fileList = $this->client->files->listFiles([
                 'q' => "'{$nsDir->id}' in parents and trashed = false and name = '" . self::VERSIONED_FILENAME . "'",
                 ]);
-            }
-            catch (\Google_Exception $e) {
-                $this->filterCommonExceptions($e);
-            }
+        } catch (\Google_Exception $e) {
+            $this->filterCommonExceptions($e);
+        }
             
-            if ($fileList && count($fileList->files) > 1) {
-                throw new DriveVersionerException(DriveVersionerMessages::DUPLICATE_VERSIONED_FILE."Namespace: {$nsDir->name}");
+        if ($fileList && count($fileList->files) > 1) {
+            throw new DriveVersionerException(DriveVersionerMessages::DUPLICATE_VERSIONED_FILE."Namespace: {$nsDir->name}");
         }
         
         $ret = $fileList->files[0] ?? null;
@@ -260,7 +262,9 @@ class DriveVersioner
     
     protected function queryForDirectory(): ?\Google_Service_Drive_DriveFile {
         
-        if ($cached = $this->checkCache($cacheKey = "queryForDirectory-{$this->ns}")) return $cached;
+        if ($cached = $this->checkCache($cacheKey = "queryForDirectory-{$this->ns}")) {
+            return $cached;
+        }
         
         try {
             $q = "'{$this->driveRootId}' in parents and trashed = false and name = '{$this->ns}' and mimeType='".self::MIME_DIR."'"; // http://bit.ly/2Bu19ro
@@ -270,8 +274,7 @@ class DriveVersioner
             $fileList = $this->client->files->listFiles([
                 'q' => $q
             ]);
-        }
-        catch (\Google_Exception $e) {
+        } catch (\Google_Exception $e) {
             $this->filterCommonExceptions($e);
         }
 
@@ -285,9 +288,9 @@ class DriveVersioner
     }
 
     /**
-     * 
+     *
      *  - https://developers.google.com/drive/v3/reference/files/update
-     * 
+     *
      * @throws DriveVersionerException
      *
      * @return \Google_Service_Drive_DriveFile
@@ -326,10 +329,10 @@ class DriveVersioner
     }
     
     /**
-     * 
+     *
      *  - https://developers.google.com/apis-explorer/#p/drive/v3/drive.files.create
      *  - https://developers.google.com/drive/v3/web/manage-uploads
-     * 
+     *
      * @throws DriveVersionerException
      *
      * @param string $ns
@@ -339,7 +342,7 @@ class DriveVersioner
      */
     protected function createVersioned(\Google_Service_Drive_DriveFile $nsDir, String $fileLoc): \Google_Service_Drive_DriveFile {
         $bodyFields = [
-            'mimeType' => $this->getMimeType($fileLoc), 
+            'mimeType' => $this->getMimeType($fileLoc),
             'properties' => [
                 'discriminator' => $this->discriminator,
                 'id' => md5($this->ns . $this->discriminator)
@@ -378,7 +381,7 @@ class DriveVersioner
      */
     protected function createDirectory(): \Google_Service_Drive_DriveFile {
         $bodyFields = [
-            'mimeType' => self::MIME_DIR, 
+            'mimeType' => self::MIME_DIR,
             'name' => $this->ns,
             'parents' => [$this->driveRootId],
         ];
@@ -441,8 +444,7 @@ class DriveVersioner
                         die;
                 }
             }
-        }
-        else {
+        } else {
             throw $e; // need to surface weird Google Exceptions here
         }
     }
@@ -450,10 +452,10 @@ class DriveVersioner
     protected function getMimeType(String $fileLoc): String {
         $ftype = 'application/octet-stream';
         $finfo = finfo_open(FILEINFO_MIME);
-        if ($finfo !== FALSE) {
+        if ($finfo !== false) {
             $fres = finfo_file($finfo, $fileLoc);
-            if (($fres !== FALSE) 
-                && is_string($fres) 
+            if (($fres !== false)
+                && is_string($fres)
                 && (strlen($fres)>0)
             ) {
                 $ftype = $fres;
@@ -490,5 +492,4 @@ class DriveVersioner
         $this->output = $output;
         return $this;
     }
-
 }

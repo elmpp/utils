@@ -10,11 +10,12 @@ use Partridge\Utils\Google\DriveVersionerException;
  * Simple factory for creating out Google_Client instance. May be expanded in the future
  * for more service clients.
  *  - relies upon correct credentials being available
- * 
- * 
+ *
+ *
  *  - https://developers.google.com/drive/v3/web/quickstart/php#step_2_install_the_google_client_library
  */
-class GoogleClientSetup {
+class GoogleClientSetup
+{
 
     const CREDENTIALS_FILENAME = 'drive-versioner-credentials.json';
     const SECRETS_FILENAME = 'drive-versioner-secret.json';
@@ -62,8 +63,8 @@ class GoogleClientSetup {
     
         // Refresh the token if it's expired.
         if ($client->isAccessTokenExpired()) {
-        $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-        file_put_contents($this->credentialsPath, json_encode($client->getAccessToken()));
+            $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+            file_put_contents($this->credentialsPath, json_encode($client->getAccessToken()));
         }
         return $client;
     }
@@ -97,7 +98,7 @@ class GoogleClientSetup {
         $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
     
         // Store the credentials to disk.
-        if(!file_exists(dirname($this->credentialsPath))) {
+        if (!file_exists(dirname($this->credentialsPath))) {
             mkdir(dirname($this->credentialsPath), 0700, true);
         }
         file_put_contents($this->credentialsPath, json_encode($accessToken));

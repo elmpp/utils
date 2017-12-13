@@ -36,6 +36,5 @@ class GoogleClientSetupTest extends TestCase
 
         $client = $subject->getClient();
         $this->assertInstanceOf(\Google_Client::CLASS, $client);
-
     }
 }

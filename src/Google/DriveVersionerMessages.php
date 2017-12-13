@@ -27,5 +27,4 @@ class DriveVersionerMessages
     const DEBUG_LISTING_VERSIONS_FOR_VERSIONED = 'Querying version list for file. ';
     const DEBUG_NEW_VERSION_CREATED = 'New version of the versioned file has been created. ';
     const DEBUG_CACHE_HIT = 'Cache hit. ';
-    
 }

@@ -6,7 +6,8 @@ use Partridge\Utils\Util;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 
-class UtilTest extends TestCase {
+class UtilTest extends TestCase
+{
 
     public function testCreateDirIfNonExistent() {
         $root = vfsStream::setup(
