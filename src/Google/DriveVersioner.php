@@ -109,6 +109,20 @@ class DriveVersioner
 
         if ($versionedFile = $this->queryForVersioned($driveDir)) {
             $this->output(DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND);
+
+            // need to check whether the versioned file already exists. Unfortunately, there is no query facility within revisions
+            // we shall use the filename to determine whether it's been uploaded 
+            // @todo - perhaps combine with an md5 hash?
+            $filename = basename($fileLoc);
+            $revisionList = $this->queryForVersionList($versionedFile);
+            $alreadyVersioned = array_filter($revisionList->getRevisions(), function(\Google_Service_Drive_Revision $item) use ($filename) {
+                return $filename === $item->getOriginalFilename();
+            });
+            if (count($alreadyVersioned)) {
+                $this->output(DriveVersionerMessages::DEBUG_VERSION_FILE_ALREADY_EXISTS);
+                return $versionedFile;
+            }
+
             $this->createUpdate($versionedFile, $driveDir, $fileLoc);
             $this->output(DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED);
         } else {
@@ -196,7 +210,7 @@ class DriveVersioner
     }
 
     /**
-     * @param \Google_Service_Drive_DriveFile $versionedFile
+     * @param \Google_Service_Drive_DriveFile $versionedFile (the HEAD versioned file)
      * @return \Google_Service_Drive_RevisionList
      */
     protected function queryForVersionList(\Google_Service_Drive_DriveFile $versionedFile): \Google_Service_Drive_RevisionList {

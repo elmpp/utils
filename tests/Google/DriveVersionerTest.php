@@ -83,6 +83,7 @@ class DriveVersionerTest extends TestCase
             [
             'versionableFile_2017-01-01.txt' => '2017-01-01',
             'versionableFile_2017-01-02.txt' => '2017-01-02',
+            'versionableFile_2017-01-03.txt' => '2017-01-03',
             ]
         );
 
@@ -180,25 +181,54 @@ class DriveVersionerTest extends TestCase
         ));
         $this->revisionsDriveClient
         ->method('listRevisions')
-        // ->with(
-        //     'test-versioned-id',
-        //     $this->callback(
-        //         // http://bit.ly/2ioGcpC
-        //         function($opts) {
-        //             $fields = $opts['fields'] ?? null;
-        //             if (!($opts['fields'] ?? null)) return false;
-        //             $fields = explode(',', $opts['fields']);
-        //             return false !== array_search('kind', $fields)
-        //                 && false !== array_search('revisions', $fields)
-        //             ;
-        //         }
-        //     )
-        // )
         ->willReturn(
             $mockVersionListList
         );
+    }
 
+    /**
+     * Duplicate file versioning attempt. We want to waft past these.
+     * Relies on the .properties.discriminator field to 
+     */
+    public function testDoesNotCreateNewVersionWithExistentDiscriminator() {
+        
+        $this->createMocksUpToVersionList();
 
+        $mockDirectoryId = 'this-is-a-test-uuid-for-dir';
+        $mockNamespaceDir = new \Google_Service_Drive_DriveFile(); // the ns directory
+        $mockNamespaceDir->id = $mockDirectoryId;
+        $mockNamespaceDir->parents = [$this->driveRootId];
+        $mockNamespaceDirList = new \Google_Service_Drive_FileList();
+        $mockNamespaceDirList->setFiles([$mockNamespaceDir]);
+        
+        $mockVersionedFile = new \Google_Service_Drive_DriveFile();
+        $mockVersionedFile->id = 'this-is-a-test-uuid-for-versioned-file';
+        $mockVersionedFile->name = DriveVersioner::VERSIONED_FILENAME;
+        $mockVersionedFile->parents = [$mockDirectoryId];
+        $mockVersionedFileList = new \Google_Service_Drive_FileList();
+        $mockVersionedFileList->setFiles([$mockVersionedFile]);
+
+        $mockNewVersionedFile = clone $mockVersionedFile;
+  
+        $this->filesDriveClient
+          ->method('listFiles')
+          ->will($this->onConsecutiveCalls($mockNamespaceDirList, $mockVersionedFileList));
+        ;
+
+        $this->filesDriveClient
+          ->expects($this->never())
+          ->method('update')
+        ;
+
+        $this->subject->version($this->root->url().'/versionableFile_2017-01-01.txt', $this->testNs, '2017-01-01'); // matches response of versionList
+        $this->assertOutputs([
+                DriveVersionerMessages::DEBUG_NS_DIR_FOUND,
+                DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND,
+                DriveVersionerMessages::DEBUG_VERSION_FILE_ALREADY_EXISTS,
+            ],
+            $this->testNs,
+            '2017-01-01'
+        );
     }
     
     public function testListVersions() {
@@ -377,14 +407,6 @@ class DriveVersionerTest extends TestCase
         }
     }
 
-    /**
-     * Duplicate file versioning attempt. We want to waft past these.
-     * Relies on the .properties.discriminator field to 
-     */
-    public function testDoesNotCreateNewVersionWithExistentDiscriminator() {
-        
-    }
-
     public function testCreatesDirectoryWhenNotExistent() {
         $mockNsDirList = new \Google_Service_Drive_FileList();
 
@@ -491,38 +513,22 @@ class DriveVersionerTest extends TestCase
       }
       
       public function testCreatesNewVersion() {
-        $mockDirectoryId = 'this-is-a-test-uuid-for-dir';
-        $mockNamespaceDir = new \Google_Service_Drive_DriveFile(); // the ns directory
-        $mockNamespaceDir->id = $mockDirectoryId;
-        $mockNamespaceDir->parents = [$this->driveRootId];
-        $mockNamespaceDirList = new \Google_Service_Drive_FileList();
-        $mockNamespaceDirList->setFiles([$mockNamespaceDir]);
-        
-        $mockVersionedFile = new \Google_Service_Drive_DriveFile();
-        $mockVersionedFile->id = 'this-is-a-test-uuid-for-versioned-file';
-        $mockVersionedFile->name = DriveVersioner::VERSIONED_FILENAME;
-        $mockVersionedFile->parents = [$mockDirectoryId];
-        $mockVersionedFileList = new \Google_Service_Drive_FileList();
-        $mockVersionedFileList->setFiles([$mockVersionedFile]);
 
-        $mockNewVersionedFile = clone $mockVersionedFile;
-  
-        $this->filesDriveClient
-          ->method('listFiles')
-          ->will($this->onConsecutiveCalls($mockNamespaceDirList, $mockVersionedFileList));
+        $this->createMocksUpToVersionList();
+
         $this->filesDriveClient
           ->expects($this->once())
           ->method('update')
           ->with(
-            $mockVersionedFile->id,
+            'test-versioned-id',
             $this->callback(
-                function ($filesObject) use ($mockDirectoryId) {
+                function ($filesObject) {
                     return 
                         substr($filesObject->mimeType, 0, 10) == 'text/plain' // could have charset on there
                         && count($filesObject->properties) === 2
-                        && $filesObject->properties['discriminator'] == '2017-01-02'
-                        && $filesObject->properties['id'] == md5($this->testNs . '2017-01-02')
-                        && $filesObject->originalFilename == 'versionableFile_2017-01-02.txt'
+                        && $filesObject->properties['discriminator'] == '2017-01-03'
+                        && $filesObject->properties['id'] == md5($this->testNs . '2017-01-03')
+                        && $filesObject->originalFilename == 'versionableFile_2017-01-03.txt'
                         && $filesObject->keepRevisionForever == true
                         && $filesObject->uploadType == 'multipart'
                         && $filesObject->name == DriveVersioner::VERSIONED_FILENAME
@@ -530,20 +536,20 @@ class DriveVersionerTest extends TestCase
                 }
             ),
             [
-                'data' => '2017-01-02', // upload's second file's data
+                'data' => '2017-01-03', // uploads file's data
             ]
           )
           ->will($this->returnArgument(1))
         ;
 
-        $this->subject->version($this->root->url().'/versionableFile_2017-01-02.txt', $this->testNs, '2017-01-02');
+        $this->subject->version($this->root->url().'/versionableFile_2017-01-03.txt', $this->testNs, '2017-01-03');
         $this->assertOutputs([
                 DriveVersionerMessages::DEBUG_NS_DIR_FOUND,
                 DriveVersionerMessages::DEBUG_VERSIONED_FILE_FOUND,
                 DriveVersionerMessages::DEBUG_NEW_VERSION_CREATED,
             ],
             $this->testNs, 
-            '2017-01-02'
+            '2017-01-03'
         );
     }
 

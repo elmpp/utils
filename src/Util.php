@@ -92,7 +92,7 @@ class Util
      */
     public static function createDirIfNonExistent($dir, $recurse = false) {
         if (!is_dir($dir)) {
-            mkdir($dir, $recurse);
+            mkdir($dir, 0777, $recurse);
         }
     }
 }
