@@ -194,14 +194,16 @@ class DriveVersioner
 
     protected function updateRevision(\Google_Service_Drive_DriveFile $versioned, \Google_Service_Drive_Revision $revision): \Google_Service_Drive_Revision {
        
+        $freshRevision = new \Google_Service_Drive_Revision;
+        $freshRevision->setKeepForever(true);
+
         try {
             $this->output(DriveVersionerMessages::DEBUG_UPDATING_REVISION . $revision->getId());
-            return $this->client->revisions->update(
+            return $this->client->revisions->update( // https://drive.google.com/file/d/1S0_vwPL7fA1Qy4ulKDT2-I3e16pE-r72/view?usp=sharing
                 $versioned->getId(),
                 $revision->getId(),
-                $revision,
+                $freshRevision,
                 [
-                    'keepForever' => true,
                 ]
             );
         } catch (\Google_Exception $e) {
@@ -407,7 +409,7 @@ class DriveVersioner
         }
     }
 
-    protected function checkCache(String $cacheKey): ?Object {
+    protected function checkCache(String $cacheKey) {
         if ($cached = $this->cache->get($cacheKey)) {
             $this->output(DriveVersionerMessages::DEBUG_CACHE_HIT . $cacheKey);
             return $cached;
@@ -434,8 +436,8 @@ class DriveVersioner
                         throw new DriveVersionerException(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND, $e->getCode(), $e);
                         break;
                     case 'fieldNotWritable':
-                        $this->output(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND);
-                        throw new DriveVersionerException(DriveVersionerMessages::PARENT_ROOT_NOT_FOUND, $e->getCode(), $e);
+                        $this->output(DriveVersionerMessages::FIELD_NOT_WRITEABLE);
+                        throw new DriveVersionerException(DriveVersionerMessages::FIELD_NOT_WRITEABLE, $e->getCode(), $e);
                         break;
                     default:
                         var_dump("new google exception");

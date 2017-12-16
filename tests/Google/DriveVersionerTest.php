@@ -100,6 +100,17 @@ class DriveVersionerTest extends TestCase
     public function testUpdateRevisions() {
         
         $this->createMocksUpToVersionList();
+
+        $revisionTest = function($item) {
+            return $item instanceof \Google_Service_Drive_Revision
+                && $item->getKeepForever() === true
+                // non-writeables
+                && $item->getId() === null
+                && $item->getKind() === null
+                && $item->getMimeType === null
+                // etc etc (just ensure is fresh Revision object, basically)
+            ;
+        };
         
         $this->revisionsDriveClient
         ->expects($this->once()) // ensure we cache the revision listings for a file
@@ -113,17 +124,19 @@ class DriveVersionerTest extends TestCase
             [
                 'test-versioned-id',
                 'revision-id-1',
-                $this->isInstanceOf(\Google_Service_Drive_Revision::CLASS),
+                $this->callback(
+                    $revisionTest
+                ),
                 [
-                    'keepForever' => true,
                 ],
             ],
             [
                 'test-versioned-id',
                 'revision-id-2',
-                $this->isInstanceOf(\Google_Service_Drive_Revision::CLASS),
+                $this->callback(
+                    $revisionTest
+                ),
                 [
-                    'keepForever' => true,
                 ],
             ]
         )

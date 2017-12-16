@@ -54,6 +54,7 @@ class DriveVersionerTest extends TestCase {
         catch (\Exception $e) {
             var_dump($e);
             var_dump("Error encountered. Code: {$e->getCode()}\n{$e->getMessage()}");
+            die;
         }
 
         $revisions = $revisionList->revisions;
@@ -62,13 +63,11 @@ class DriveVersionerTest extends TestCase {
 
         $this->assertRevisionValues($revisions[0]);
         $this->assertCount(3, $revisions, "Perhaps we didn't clear down the drive test dir?");
-
     }
 
     protected function assertRevisionValues(\Google_Service_Drive_Revision $revision) {
         $this->assertTrue($revision->keepForever, "Revisions should have been set to keep forever");
-        $this->assertEquals($revision->originalFilename, "Google_Service_Drive_Revision.txt.tar");
-
+        $this->assertEquals($revision->originalFilename, "partridge_2017-12-03.txt.tar.gz");
     }
 
     protected function doGetListing(): ?\Google_Service_Drive_RevisionList {
@@ -90,6 +89,6 @@ class DriveVersionerTest extends TestCase {
             $ids[] = $lastUpload->getId();
         }
 
-        return; // not any need for anything
+        $this->versioner->updateAllRevisions($ns);
     }
 }
