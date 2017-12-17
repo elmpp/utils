@@ -1,16 +1,16 @@
 <?php
 
-namespace Partridge\Utils\tests\Google;
+namespace Partridge\Utils\Tests\Google\DriveVersioner;
 
-require_once __DIR__.'/../../vendor/autoload.php';
+require_once __DIR__.'/../../../vendor/autoload.php';
 
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 use org\bovigo\vfs\vfsStreamDirectory;
-use Partridge\Utils\Google\DriveVersioner;
+use Partridge\Utils\Google\DriveVersioner\DriveVersioner;
 use Symfony\Component\Console\Output\Output;
-use Partridge\Utils\Google\DriveVersionerMessages;
-use Partridge\Utils\Google\DriveVersionerException;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerMessages;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerException;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**

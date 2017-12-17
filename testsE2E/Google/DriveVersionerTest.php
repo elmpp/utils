@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
 use Partridge\Utils\Google\DriveVersioner;
 use Symfony\Component\Console\Output\Output;
-use Partridge\Utils\Google\GoogleClientSetup;
+use Partridge\Utils\Google\GoogleClientAPISetup;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -31,7 +31,7 @@ class DriveVersionerTest extends TestCase {
     public function setUp() {
         // Get the API client and construct the service object.
         $clientCredentialsDir = __DIR__ . '/Fixtures';
-        $clientSetup = new GoogleClientSetup($clientCredentialsDir);
+        $clientSetup = new GoogleClientAPISetup($clientCredentialsDir);
         $client = $clientSetup->getClient();
         $driveService = new \Google_Service_Drive($client);
         

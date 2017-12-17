@@ -14,7 +14,7 @@ use Partridge\Utils\Google\DriveVersionerException;
  *
  *  - https://developers.google.com/drive/v3/web/quickstart/php#step_2_install_the_google_client_library
  */
-class GoogleClientSetup
+class GoogleClientAPISetup
 {
 
     const CREDENTIALS_FILENAME = 'drive-versioner-credentials.json';

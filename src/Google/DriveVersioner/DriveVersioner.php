@@ -1,14 +1,15 @@
 <?php
 
-namespace Partridge\Utils\Google;
+namespace Partridge\Utils\Google\DriveVersioner;
 
 use Partridge\Utils\Util;
 use Partridge\Utils\ArrayUtil;
 use Psr\SimpleCache\CacheInterface;
+use Partridge\Utils\Traits\OutputtableTrait;
 use Symfony\Component\Console\Output\Output;
 use Symfony\Component\Cache\Simple\ArrayCache;
-use Partridge\Utils\Google\DriveVersionerMessages;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerMessages;
 
 /**
  * Nice to haves:
@@ -16,6 +17,8 @@ use Symfony\Component\Console\Output\ConsoleOutput;
  */
 class DriveVersioner
 {
+    use OutputtableTrait;
+
     const MIME_DIR = 'application/vnd.google-apps.folder';
     const VERSIONED_FILENAME = 'versioned';
     const MODE_VERSION = 'VERSION';
@@ -483,15 +486,6 @@ class DriveVersioner
 
     public function setVerbosity(Int $verbosity): self {
         $this->verbosity = $verbosity;
-        return $this;
-    }
-
-     /**
-     * @param Output $output
-     * @return self
-     */
-    public function setOutput(Output $output): self {
-        $this->output = $output;
         return $this;
     }
 }
