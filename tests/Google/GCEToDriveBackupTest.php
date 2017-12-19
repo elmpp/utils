@@ -110,7 +110,7 @@ class GCEToDriveBackupTest extends TestCase {
             $this->driveVersionerMock
             ->expects($this->exactly(count($driveVersionerVersionWith)))
             ->method('version')
-            ->withConsecutive(new \PHPUnit_Framework_MockObject_Stub_ConsecutiveCalls($driveVersionerVersionWith))
+            ->withConsecutive(new \PHPUnit\Framework\MockObject\Stub\ConsecutiveCalls($driveVersionerVersionWith))
             ;
 
             if ($aMeta['versionable']) {
