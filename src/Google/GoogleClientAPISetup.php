@@ -3,8 +3,8 @@
 namespace Partridge\Utils\Google;
 
 use Partridge\Utils\Util;
-use Partridge\Utils\Google\DriveVersionerMessages;
-use Partridge\Utils\Google\DriveVersionerException;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerMessages;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerException;
 
 /**
  * Simple factory for creating out Google_Client instance. May be expanded in the future
@@ -16,50 +16,54 @@ use Partridge\Utils\Google\DriveVersionerException;
  */
 class GoogleClientAPISetup
 {
-
-    const CREDENTIALS_FILENAME = 'drive-versioner-credentials.json';
-    const SECRETS_FILENAME = 'drive-versioner-secret.json';
-    const DRIVE_ROOT_ID_FILENAME = 'root-drive-id.txt';
-
     protected $applicationName = 'Drive API PHP Quickstart';
     protected $credentialsPath;
     protected $clientSecretPath;
     protected $driveRootId;
     protected $scopes;
 
-    public function __construct(String $credentialsDir) {
+    public function __construct(String $credentialsPath, String $oAuthSecretsPath, String $rootDriveId) {
         
-        $this->credentialsPath = $credentialsDir . '/' . self::CREDENTIALS_FILENAME;
-        $this->clientSecretPath = $credentialsDir . '/' . self::SECRETS_FILENAME;
-        $this->driveRootId = file_get_contents($credentialsDir . '/' . self::DRIVE_ROOT_ID_FILENAME);
+        $this->credentialsPath = $credentialsPath;
+        $this->clientSecretPath = $oAuthSecretsPath; // http://bit.ly/2D13niN
+        $this->driveRootId = $rootDriveId;
 
         // If modifying these scopes, delete your previously saved credentials
         // at ~/.credentials/drive-php-quickstart.json
         $this->scopes = implode(' ', [\Google_Service_Drive::DRIVE]); // full access to my google drive
         if (php_sapi_name() != 'cli') {
-            throw new Exception('This application must be run on the command line.');
+            throw new \Exception('This application must be run on the command line.');
         }
         // Util::createDirIfNonExistent(dirname($credentialsDir));
+    }
+
+    protected function doCheckFileDependencies() {
+
+        // Load previously authorized credentials from a file.
+        if (!file_exists($this->credentialsPath)) {
+            throw new DriveVersionerException(DriveVersionerMessages::SETUP_CREDENTIALS_FILE_NOT_FOUND."Attempted path: {$this->credentialsPath}");
+        }
+        
+        if (!file_exists($this->clientSecretPath)) {
+            throw new DriveVersionerException(DriveVersionerMessages::SETUP_CLIENT_SECRETS_FILE_NOT_FOUND."Attempted path: {$this->clientSecretPath}");
+        }
     }
 
     /**
      * Returns an authorized API client.
      * @return \Google_Client the authorized client object
      */
-    public function getClient() {
+    public function getClient(): \Google_Client {
+        
+        $this->doCheckFileDependencies();
+        
         $client = new \Google_Client();
         $client->setApplicationName($this->applicationName);
         $client->setScopes($this->scopes);
         $client->setAuthConfig($this->clientSecretPath);
         $client->setAccessType('offline');
     
-        // Load previously authorized credentials from a file.
-        if (file_exists($this->credentialsPath)) {
-            $accessToken = json_decode(file_get_contents($this->credentialsPath), true);
-        } else {
-            throw new DriveVersionerException(DriveVersionerMessages::SETUP_CREDENTIALS_FILE_NOT_FOUND."Attempted path: {$this->credentialsPath}");
-        }
-        $client->setAccessToken($accessToken);
+        $client->setAccessToken(json_decode(file_get_contents($this->credentialsPath), true));
     
         // Refresh the token if it's expired.
         if ($client->isAccessTokenExpired()) {
@@ -67,6 +71,11 @@ class GoogleClientAPISetup
             file_put_contents($this->credentialsPath, json_encode($client->getAccessToken()));
         }
         return $client;
+    }
+
+    public function getDriveClient() {
+        $client = $this->getClient();
+        return new \Google_Service_Drive($client);
     }
 
     public function recreateCredentials() {

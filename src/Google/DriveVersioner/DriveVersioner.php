@@ -412,6 +412,11 @@ class DriveVersioner
         }
     }
 
+    public function clearCache(): self {
+        $this->cache->clear();
+        return $this;
+    }
+
     protected function checkCache(String $cacheKey) {
         if ($cached = $this->cache->get($cacheKey)) {
             $this->output(DriveVersionerMessages::DEBUG_CACHE_HIT . $cacheKey);

@@ -17,6 +17,7 @@ class DriveVersionerMessages
     const DRIVE_CANNOT_LIST_VERSIONED_FILE = 'The versions cannot be listed. This may be due to missing versioned file, namespace directory or incorrect root. ';
 
     const SETUP_CREDENTIALS_FILE_NOT_FOUND = 'Credential files were expected. See here for more info - http://bit.ly/2jHemoK. ';
+    const SETUP_CLIENT_SECRETS_FILE_NOT_FOUND = 'OAuth access file not found. See here for more info - http://bit.ly/2D13niN. ';
 
     const DEBUG_DRIVE_ROOT_FOUND = 'Root drive was found. ';
     const DEBUG_NS_DIR_CREATED = 'Namespace directory has been created. ';

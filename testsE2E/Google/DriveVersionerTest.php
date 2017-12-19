@@ -4,10 +4,10 @@ namespace Partridge\Utils\TestsE2E\Google;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
-use Partridge\Utils\Google\DriveVersioner;
 use Symfony\Component\Console\Output\Output;
 use Partridge\Utils\Google\GoogleClientAPISetup;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Partridge\Utils\Google\DriveVersioner\DriveVersioner;
 
 /**
  * NEVER EVER EVER RUN IN CI OR WHATEVER - THESE ARE FOR PROOFING AND SPEEDING OF WORK
@@ -30,8 +30,12 @@ class DriveVersionerTest extends TestCase {
 
     public function setUp() {
         // Get the API client and construct the service object.
-        $clientCredentialsDir = __DIR__ . '/Fixtures';
-        $clientSetup = new GoogleClientAPISetup($clientCredentialsDir);
+        $clientCredentialsFilePath = __DIR__ . '/Fixtures';
+        $clientSetup = new GoogleClientAPISetup(
+            __DIR__ . '/Fixtures/api-credentials.json',
+            __DIR__ . '/Fixtures/api-secret.json',
+            file_get_contents(__DIR__ . '/Fixtures/api-root-drive-id.txt') // (/Partridge/backups/testDriveVersioner) - http://bit.ly/2D8cqPl
+        );
         $client = $clientSetup->getClient();
         $driveService = new \Google_Service_Drive($client);
         
@@ -49,6 +53,7 @@ class DriveVersionerTest extends TestCase {
     public function testCreatesMultiple() {
         try {
             $this->doVersioning();
+            $this->versioner->clearCache(); // can't assert on the keepForever which has been newly revised
             $revisionList = $this->doGetListing();
         }
         catch (\Exception $e) {
@@ -59,7 +64,6 @@ class DriveVersionerTest extends TestCase {
 
         $revisions = $revisionList->revisions;
         print($this->output->fetch());
-// var_dump($revisions);
 
         $this->assertRevisionValues($revisions[0]);
         $this->assertCount(3, $revisions, "Perhaps we didn't clear down the drive test dir?");

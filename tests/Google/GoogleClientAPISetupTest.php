@@ -5,36 +5,81 @@ namespace Partridge\Utils\Tests\Google;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 use Partridge\Utils\Google\GoogleClientAPISetup;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerMessages;
+use Partridge\Utils\Google\DriveVersioner\DriveVersionerException;
 
-require_once __DIR__.'/../../vendor/autoload.php';
+// require_once __DIR__.'/../../vendor/autoload.php';
 
 /**
  * Perhaps check it looks at the right place for keys etc
  */
 class GoogleClientAPISetupTest extends TestCase
 {
-    public function testGetClient() {
-        $credentialsPath = '/var/Partridge/auth';
-        $root = vfsStream::setup(
+    /**
+     * @var vfsStreamDirectory
+     */
+    protected $root;
+
+    public function setUp() {
+        $this->root = vfsStream::setup(
             'root',
             null,
             ['var' => [
-                'Partridge' => [
+                'partridge' => [
                     'auth' => [
                         // // should be a dummy credentials file that can be versioned ok
-                        GoogleClientAPISetup::CREDENTIALS_FILENAME => file_get_contents(__DIR__.'/DriveVersioner/Fixtures/'.GoogleClientAPISetup::CREDENTIALS_FILENAME),
-                        GoogleClientAPISetup::SECRETS_FILENAME => file_get_contents(__DIR__.'/DriveVersioner/Fixtures/'.GoogleClientAPISetup::SECRETS_FILENAME),
-                        GoogleClientAPISetup::DRIVE_ROOT_ID_FILENAME => file_get_contents(__DIR__.'/DriveVersioner/Fixtures/'.GoogleClientAPISetup::DRIVE_ROOT_ID_FILENAME),
+                        'api-credentials.json' => file_get_contents(__DIR__.'/Fixtures/api-credentials.json'),
+                        'api-secret.json' => file_get_contents(__DIR__.'/Fixtures/api-secret.json'),
                     ]
                 ]
             ]]
         );
+    }
 
-        $subject = new GoogleClientAPISetup($root->url().$credentialsPath);
-
-        $this->assertEquals($subject->getDriveRootId(), 'made-up-root-id', "Didn't pick up the driveRootId from the `root-drive-id.txt` file");
+    public function testCredentialsPathNotExistent() {
+        $this->expectException(DriveVersionerException::CLASS);
+        $this->expectExceptionMessageRegExp('|^' . DriveVersionerMessages::SETUP_CREDENTIALS_FILE_NOT_FOUND . '.*$|');
+        $subject = new GoogleClientAPISetup(
+            $this->root->url() . '/NON_EXISTENT/api-credentials.json', 
+            $this->root->url() . '/var/partridge/auth/api-secret.json', 
+            'made-up-gdrive-folder-id'
+        );
+        $client = $subject->getClient();
+    }
+    
+    public function testClientSecretsPathNotExistent() {
+        $this->expectException(DriveVersionerException::CLASS);
+        $this->expectExceptionMessageRegExp('|^' . DriveVersionerMessages::SETUP_CLIENT_SECRETS_FILE_NOT_FOUND . '.*$|');
+        $subject = new GoogleClientAPISetup(
+            $this->root->url() . '/var/partridge/auth/api-credentials.json', 
+            $this->root->url() . '/NON_EXISTENT/api-secret.json', 
+            'made-up-gdrive-folder-id'
+        );
+        $client = $subject->getClient();
+    }
+    
+    public function testGetClient() {
+        
+        $subject = new GoogleClientAPISetup(
+            $this->root->url() . '/var/partridge/auth/api-credentials.json', 
+            $this->root->url() . '/var/partridge/auth/api-secret.json', 
+            'made-up-gdrive-folder-id'
+        );
+        // $subject = new GoogleClientAPISetup($this->root->url() . '/var/partridge/auth/api-credentials.json', 'made-up-gdrive-folder-id');
 
         $client = $subject->getClient();
         $this->assertInstanceOf(\Google_Client::CLASS, $client);
+    }
+    
+    public function testGetDriveClient() {
+        
+        $subject = new GoogleClientAPISetup(
+            $this->root->url() . '/var/partridge/auth/api-credentials.json', 
+            $this->root->url() . '/var/partridge/auth/api-secret.json', 
+            'made-up-gdrive-folder-id'
+        );
+        
+        $client = $subject->getDriveClient();
+        $this->assertInstanceOf(\Google_Service_Drive::CLASS, $client);
     }
 }
