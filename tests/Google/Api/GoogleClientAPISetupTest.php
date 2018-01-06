@@ -38,8 +38,8 @@ class GoogleClientAPISetupTest extends TestCase
         $this->expectException(\Exception::CLASS);
         $this->expectExceptionMessageRegExp('|^' . GoogleClientAPISetup::SETUP_CREDENTIALS_FILE_NOT_FOUND . '.*$|');
         $subject = new GoogleClientAPISetup(
-            $this->root->url() . '/NON_EXISTENT/api-credentials.json', 
-            $this->root->url() . '/var/partridge/auth/api-secret.json', 
+            $this->root->url() . '/NON_EXISTENT/api-credentials.json',
+            $this->root->url() . '/var/partridge/auth/api-secret.json',
             'made-up-gdrive-folder-id'
         );
         $client = $subject->getClient();
@@ -49,8 +49,8 @@ class GoogleClientAPISetupTest extends TestCase
         $this->expectException(\Exception::CLASS);
         $this->expectExceptionMessageRegExp('|^' . GoogleClientAPISetup::SETUP_CLIENT_SECRETS_FILE_NOT_FOUND . '.*$|');
         $subject = new GoogleClientAPISetup(
-            $this->root->url() . '/var/partridge/auth/api-credentials.json', 
-            $this->root->url() . '/NON_EXISTENT/api-secret.json', 
+            $this->root->url() . '/var/partridge/auth/api-credentials.json',
+            $this->root->url() . '/NON_EXISTENT/api-secret.json',
             'made-up-gdrive-folder-id'
         );
         $client = $subject->getClient();
@@ -59,8 +59,8 @@ class GoogleClientAPISetupTest extends TestCase
     public function testGetClient() {
         
         $subject = new GoogleClientAPISetup(
-            $this->root->url() . '/var/partridge/auth/api-credentials.json', 
-            $this->root->url() . '/var/partridge/auth/api-secret.json', 
+            $this->root->url() . '/var/partridge/auth/api-credentials.json',
+            $this->root->url() . '/var/partridge/auth/api-secret.json',
             'made-up-gdrive-folder-id'
         );
         // $subject = new GoogleClientAPISetup($this->root->url() . '/var/partridge/auth/api-credentials.json', 'made-up-gdrive-folder-id');
@@ -72,8 +72,8 @@ class GoogleClientAPISetupTest extends TestCase
     public function testGetDriveClient() {
         
         $subject = new GoogleClientAPISetup(
-            $this->root->url() . '/var/partridge/auth/api-credentials.json', 
-            $this->root->url() . '/var/partridge/auth/api-secret.json', 
+            $this->root->url() . '/var/partridge/auth/api-credentials.json',
+            $this->root->url() . '/var/partridge/auth/api-secret.json',
             'made-up-gdrive-folder-id'
         );
         

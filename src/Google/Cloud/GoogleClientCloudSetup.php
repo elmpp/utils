@@ -13,10 +13,10 @@ use Partridge\Utils\Google\DriveVersionerException;
  * for more cloud service clients.
  *  - relies upon correct credentials being available in the defined place
  *
- *  Authentication to the api is done with a service account. Relies on there being 
+ *  Authentication to the api is done with a service account. Relies on there being
  * the json file at the predefined place
  * - http://bit.ly/2BQ95TR
- * 
+ *
  *  - https://github.com/GoogleCloudPlatform/php-docs-samples/blob/master/appengine/flexible/storage/app.php
  */
 class GoogleClientCloudSetup
@@ -41,12 +41,12 @@ class GoogleClientCloudSetup
 
     /**
      * Returns a Bucket instance
-     * 
+     *
      *  - http://bit.ly/2kdkbLR
      */
     public function getStorageBucket(String $bucket): Bucket {
         
-        $storageClient = new StorageClient([ // 
+        $storageClient = new StorageClient([ //
             'projectId' => $this->projectId,
         ]);
         return $storageClient->bucket($bucket);
