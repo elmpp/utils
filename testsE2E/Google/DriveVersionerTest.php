@@ -36,8 +36,9 @@ class DriveVersionerTest extends TestCase {
             __DIR__ . '/Fixtures/api-secret.json',
             file_get_contents(__DIR__ . '/Fixtures/api-root-drive-id.txt') // (/Partridge/backups/testDriveVersioner) - http://bit.ly/2D8cqPl
         );
-        $client = $clientSetup->getClient();
-        $driveService = new \Google_Service_Drive($client);
+        // $client = $clientSetup->getClient();
+        // $driveService = new \Google_Service_Drive($client);
+        $driveService = $clientSetup->getDriveClient();
         
         // n.b. the driveRootId will be for this test directory - http://bit.ly/2jIDTOv
         $this->versioner = new DriveVersioner($driveService, $clientSetup->getDriveRootId());

@@ -8,7 +8,7 @@ use Partridge\Utils\Google\GoogleClientAPISetup;
 use Partridge\Utils\Google\DriveVersioner\DriveVersionerMessages;
 use Partridge\Utils\Google\DriveVersioner\DriveVersionerException;
 
-// require_once __DIR__.'/../../vendor/autoload.php';
+require_once __DIR__.'/../../vendor/autoload.php';
 
 /**
  * Perhaps check it looks at the right place for keys etc

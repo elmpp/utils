@@ -25,6 +25,12 @@ class GCEToDriveBackup {
     const MESSAGE_DEBUG_DRIVE_BACKING_UP = 'Backing up this many files on Drive. ';
 
     /**
+     * Regex that can parse a standardised format
+     * @var string
+     */
+    const PARSE_REGEX = '/^(.*\/)?(?:(.+)_)([^.]+)(\..*$|($))/';
+
+    /**
      * @var String
      */
     protected $tmpDir;
@@ -125,6 +131,12 @@ class GCEToDriveBackup {
         foreach ($files as $aFile) {
             $aFile->delete();
         }
+    }
+
+    public static function filepathParser(String $path): array {
+        preg_match(self::PARSE_REGEX, $path, $matches);
+        $matches = array_slice($matches, 1, 4);
+        return $matches;
     }
 
     /**

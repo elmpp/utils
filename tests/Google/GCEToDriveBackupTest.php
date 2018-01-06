@@ -148,11 +148,24 @@ class GCEToDriveBackupTest extends TestCase {
         );
     }
 
-    public function testTmpDirNotWritable() {
+    /**
+     * @dataProvider parserDataProvider
+     */
+    public function testFilepathParser($path, $expected) {
+        list($expectedDirPath, $expectedNs, $expectedDiscriminator, $expectedExtension) = $expected;
 
+        list($dirPath, $ns, $discriminator, $extension) = GCEToDriveBackup::filepathParser($path);
+        $this->assertEquals($expectedDirPath, $dirPath);
+        $this->assertEquals($expectedNs, $ns);
+        $this->assertEquals($expectedDiscriminator, $discriminator);
+        $this->assertEquals($expectedExtension, $extension);
+    }
+
+    public function testTmpDirNotWritable() {
+        $this->markTestSkipped();
     }
     public function testDiscriminatorRegexFail() {
-
+        $this->markTestSkipped();
     }
     
     public function dataProvider() {
@@ -305,6 +318,48 @@ class GCEToDriveBackupTest extends TestCase {
                 ],
                 true,
             ],
+        ];
+    }
+
+    public function parserDataProvider() {
+        return
+        [
+            [
+                '/tmp/something_2017-05-08.sql',
+                [
+                    '/tmp/',
+                    'something',
+                    '2017-05-08',
+                    '.sql',
+                    ]
+                ],
+            [
+                '/tmp/something_realy_long_2017-05-08.sql',
+                [
+                    '/tmp/',
+                    'something_realy_long',
+                    '2017-05-08',
+                    '.sql',
+                ]
+            ],
+            [
+                'something_realy_long__2017-05-08.sql',
+                [
+                    '',
+                    'something_realy_long_',
+                    '2017-05-08',
+                    '.sql',
+                ],
+            ],
+            [
+                'something_2017-05-08',
+                [
+                    '',
+                    'something',
+                    '2017-05-08',
+                    '',
+                ],
+            ]
         ];
     }
 

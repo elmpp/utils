@@ -25,7 +25,10 @@ class GoogleClientCloudSetupTest extends TestCase
     // }
 
     public function testGetStorageBucket() {
-        $subject = new GoogleClientCloudSetup(file_get_contents(__DIR__.'/Fixtures/cloud-project-id.txt'));
+        $subject = new GoogleClientCloudSetup(
+            file_get_contents(__DIR__.'/Fixtures/cloud-project-id.txt'),
+            __DIR__.'/Fixtures/cloud-service-account.json'
+        );
         $bucket = $subject->getStorageBucket('partridge');
         $this->assertInstanceOf(Bucket::CLASS, $bucket);
     }
