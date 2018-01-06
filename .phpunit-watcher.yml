@@ -1,0 +1,11 @@
+# http://bit.ly/2m11OtJ
+watch:
+  directories:
+    - src
+    - tests
+  fileMask: '*.php'
+notifications:
+  passingTests: false
+  failingTests: false
+phpunit:
+  arguments: '--stop-on-failure'

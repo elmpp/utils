@@ -41,22 +41,37 @@ class Util
   /**
    * Attempts to find the project root without use of Parameters/Container
    *  - assumes a project with a base composer.json file
-   *  - assumes a project with a base phpunit.xml.dist file
+   *  - if the project directory name is given, will verify the found root is
+   *  matching and if not, attempt the sibling directories. This is to support
+   *  local development with composer.local.json files
    *
    * @return string
    */
-    public static function getProjectRoot() {
-        $currentDir = realpath(dirname(__FILE__));
+    public static function getProjectRoot($projectDirName = null, $testableCurrentDir = null) {
+        $currentDir = dirname($testableCurrentDir) ?: realpath(dirname(__FILE__));
 
         while (!in_array($currentDir, ['/', '.'])) {
             if (is_file("${currentDir}/composer.json")
             && is_file("${currentDir}/RoboFile.php")
             ) {
-                return $currentDir;
+                if ($projectDirName) {
+                    if ($projectDirName === basename($currentDir)) {
+                        return $currentDir;
+                    }
+                    else { // possible sibling directory setup
+                        $possibleDevelopmentDir = dirname($currentDir);
+                        if (is_dir("${possibleDevelopmentDir}/${projectDirName}")) {
+                            return "${possibleDevelopmentDir}/${projectDirName}";
+                        }
+                    }
+                }
+                else {
+                    return $currentDir;
+                }
             }
             $currentDir = dirname($currentDir);
         }
-        throw new \Exception('unable to derive the projectRoot successfully');
+        throw new \Exception("unable to derive the projectRoot successfully. CurrentDir: ${testableCurrentDir}");
     }
 
   /**
