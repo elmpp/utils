@@ -1,6 +1,6 @@
 <?php
 
-namespace Partridge\Utils\Google;
+namespace Partridge\Utils\Google\Cloud;
 
 use Partridge\Utils\Util;
 use Google\Cloud\Storage\Bucket;

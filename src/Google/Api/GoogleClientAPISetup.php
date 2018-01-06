@@ -1,10 +1,8 @@
 <?php
 
-namespace Partridge\Utils\Google;
+namespace Partridge\Utils\Google\Api;
 
 use Partridge\Utils\Util;
-use Partridge\Utils\Google\DriveVersioner\DriveVersionerMessages;
-use Partridge\Utils\Google\DriveVersioner\DriveVersionerException;
 
 /**
  * Simple factory for creating out Google_Client instance. May be expanded in the future
@@ -16,6 +14,9 @@ use Partridge\Utils\Google\DriveVersioner\DriveVersionerException;
  */
 class GoogleClientAPISetup
 {
+    const SETUP_CREDENTIALS_FILE_NOT_FOUND = "The required credentials file is not found. Please see the ../Util/recreateCredentials.php script for more info. ";
+    const SETUP_CLIENT_SECRETS_FILE_NOT_FOUND = "The secrets file was not found. This is the file that is downloaded from the GCE admin area. See here - http://bit.ly/2D13niN . ";
+
     protected $applicationName = 'Drive API PHP Quickstart';
     protected $credentialsPath;
     protected $clientSecretPath;
@@ -41,11 +42,11 @@ class GoogleClientAPISetup
 
         // Load previously authorized credentials from a file.
         if (!file_exists($this->credentialsPath)) {
-            throw new DriveVersionerException(DriveVersionerMessages::SETUP_CREDENTIALS_FILE_NOT_FOUND."Attempted path: {$this->credentialsPath}");
+            throw new \Exception(self::SETUP_CREDENTIALS_FILE_NOT_FOUND."Attempted path: {$this->credentialsPath}");
         }
         
         if (!file_exists($this->clientSecretPath)) {
-            throw new DriveVersionerException(DriveVersionerMessages::SETUP_CLIENT_SECRETS_FILE_NOT_FOUND."Attempted path: {$this->clientSecretPath}");
+            throw new \Exception(self::SETUP_CLIENT_SECRETS_FILE_NOT_FOUND."Attempted path: {$this->clientSecretPath}");
         }
     }
 

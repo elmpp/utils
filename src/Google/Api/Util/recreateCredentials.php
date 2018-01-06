@@ -1,7 +1,7 @@
 #!/usr/local/bin/php
 <?php
 
-namespace Partridge\Utils\Google\Util;
+namespace Partridge\Utils\Google\Api\Util;
 
 require_once __DIR__.'/../../../vendor/autoload.php';
 
