@@ -28,13 +28,13 @@ class UtilTest extends TestCase
     /**
      * @dataProvider dataProviderGetProjectRoot
      */
-    public function testGetProjectRoot(array $vfsStructure, ?String $specifiedProjectDirName, String $realPathOfUtilClass) {
+    public function testGetProjectRoot(array $vfsStructure, String $realPathOfUtilClass) {
         $root = vfsStream::setup(
             'root',
             null,
             $vfsStructure
         );
-        $this->assertEquals($root->url() . '/development/api', Util::getProjectRoot($specifiedProjectDirName, $root->url() . $realPathOfUtilClass));
+        $this->assertEquals($root->url() . '/development/api', Util::getProjectRoot($root->url() . $realPathOfUtilClass));
     }
 
     public function dataProviderGetProjectRoot() {
@@ -57,7 +57,8 @@ class UtilTest extends TestCase
             'RoboFile.php' => 'some data',
             'vendor' => [
                 // .. other projects but not util
-            ]
+            ],
+            'composer.local.json' => 'this signifies the project as being the owner'
         ];
         
         return [
@@ -69,22 +70,16 @@ class UtilTest extends TestCase
                         'util' => $utilProject,
                     ],
                 ],
-                // the supplied project name to getProjectRoot
-                'api',
                 // the reported realpath to the Util Class (settable for testing only)
                 '/development/api/vendor/util/Util.php',
             ],
             [
-                // the file system
                 [
                     'development' => [
                         'api' => $apiProjectWithVendorComposer,
                         'util' => $utilProject,
                     ],
                 ],
-                // the supplied project name to getProjectRoot
-                null,
-                // the reported realpath to the Util Class (settable for testing only)
                 '/development/api/vendor/util/Util.php',
             ],
             [
@@ -94,8 +89,7 @@ class UtilTest extends TestCase
                         'util' => $utilProject,
                     ],
                 ],
-                'api',
-                '/development/util/Util.php'
+                '/development/api/Robofile.php'
             ]
         ];
     }

@@ -89,7 +89,7 @@ trait RoboFileWiremockTrait
 
     protected function wiremockSetup() {
         if (!is_readable(self::getWiremockJarFile())) {
-            throw new TaskException('Wiremock jar expected at '.self::getWiremockJarFile());
+            throw new TaskException(get_class($this), 'Wiremock jar expected at '.self::getWiremockJarFile());
         }
         $this->systemProcessGrep('[w]iremock.jar', true);
     }

@@ -47,31 +47,33 @@ class Util
    *
    * @return string
    */
-    public static function getProjectRoot($projectDirName = null, $testableCurrentDir = null) {
-        $currentDir = dirname($testableCurrentDir) ?: realpath(dirname(__FILE__));
+    public static function getProjectRoot($testableCurrentDir = null) {
+        $currentDir = dirname($testableCurrentDir) ?: getcwd();
 
         while (!in_array($currentDir, ['/', '.'])) {
             if (is_file("${currentDir}/composer.json")
             && is_file("${currentDir}/RoboFile.php")
             ) {
-                if ($projectDirName) {
-                    if ($projectDirName === basename($currentDir)) {
-                        return $currentDir;
-                    }
-                    else { // possible sibling directory setup
-                        $possibleDevelopmentDir = dirname($currentDir);
-                        if (is_dir("${possibleDevelopmentDir}/${projectDirName}")) {
-                            return "${possibleDevelopmentDir}/${projectDirName}";
-                        }
-                    }
-                }
-                else {
-                    return $currentDir;
-                }
+                return $currentDir;
+                
+                // if ($projectDirName) {
+                //     if ($projectDirName === basename($currentDir)) {
+                //         return $currentDir;
+                //     }
+                //     else { // possible sibling directory setup
+                //         $possibleDevelopmentDir = dirname($currentDir);
+                //         if (is_dir("${possibleDevelopmentDir}/${projectDirName}")) {
+                //             return "${possibleDevelopmentDir}/${projectDirName}";
+                //         }
+                //     }
+                // }
+                // else {
+                //     return $currentDir;
+                // }
             }
             $currentDir = dirname($currentDir);
         }
-        throw new \Exception("unable to derive the projectRoot successfully. CurrentDir: ${testableCurrentDir}");
+        throw new \Exception("unable to derive the projectRoot successfully. You should be executing a file within consuming project. CurrentDir: ${testableCurrentDir}");
     }
 
   /**
