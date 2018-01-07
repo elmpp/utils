@@ -51,6 +51,7 @@ class Util
         while (!in_array($currentDir, ['/', '.'])) {
             if (is_file("${currentDir}/composer.json")
             && is_file("${currentDir}/RoboFile.php")
+            && basename($currentDir) !== 'utils'
             ) {
                 return $currentDir;
             }
