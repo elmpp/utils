@@ -11,13 +11,32 @@ use Robo\Exception\TaskException;
 trait RoboFileWiremockTrait
 {
   /**
-   * Convenience method for forming the namespace name. Used in lieu of constants (not allowed in traits)
+   * Our wiremock data will be siloed into "namespaces". This maps the numerical indexes to
+   * the data directory holding the wiremock fixtures files
    */
-    public static function getNamespaceByIndex($index = 0) {
+  public static function getDataDirByIndex(Int $index = 0): String {
       // 0 is considered default and maps to the "standard" namespace
         $map = [
         0 => 'standard',
         1 => '1--football--arsenal-v-leicester',
+        ];
+
+        return $map[$index];
+    }
+
+    public static function getPHPUnitSuitesByIndex(Int $index = 0): array {
+        $map = [
+        0 => [
+          'nofixtures', // doesn't have data dependencies
+          'integration_0_postStatic',
+          'integration_0_postIntegration',
+          'integration_0_postIntegrationStats',
+          'integration_0_postIntegrationApi',
+          'integration_0_multipleCategory1',
+        ],
+        1 => [
+          'integration_1_postIntegrationStats',
+        ],
         ];
 
         return $map[$index];

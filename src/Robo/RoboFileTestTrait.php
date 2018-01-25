@@ -21,7 +21,7 @@ trait RoboFileTestTrait
         $coll = $this->collectionBuilder();
         foreach ($testSuite as $aSuite) {
             $coll
-            ->taskPhpUnit('./vendor/bin/phpunit')
+            ->taskPhpUnit('time ./vendor/bin/phpunit')
             ->option('testsuite', $aSuite)
             ->printOutput(true)
             ;
@@ -41,7 +41,8 @@ trait RoboFileTestTrait
                 $coll->option('debug');
             }
         }
-        $coll->run();
+        $res = $coll->run();
+        $this->say("Total time: (s)/(m) " . round($res->getExecutionTime(), 2) . " / " . round(($res->getExecutionTime() / 60), 2));
       // explicitly return 0 - Robo 1.1 expects this now seemingly on success
     }
 
