@@ -43,7 +43,7 @@ trait RoboFileTestTrait
         }
         $res = $coll->run();
         $this->say("Total time: (s)/(m) " . round($res->getExecutionTime(), 2) . " / " . round(($res->getExecutionTime() / 60), 2));
-        return $res;
+        return $res->getExitCode();
     }
 
     public function testBootstrap($env = 'test') {
@@ -77,27 +77,6 @@ trait RoboFileTestTrait
         ->run()
         ;
 
-        return $res;
-    }
-
-  /**
-   * Runs the selenium tests
-   * These realised as node [nightwatch] scripts
-   */
-    protected function doTestSeleniumQuick($platform = 'local') {
-      // the "partridge/testing" composer package should have been pulled in by composer
-        $testingDir = $this->getCurrentProjectDir().'/vendor/partridge/testing';
-
-        $res = $this->collectionBuilder()
-        ->taskExec('npm install')
-        ->dir($testingDir)
-        ->printOutput(true)
-        ->taskExec("npm run quick:${platform}")
-        ->dir($testingDir)
-        ->printOutput(true)
-        ->run()
-        ;
-
-        return $res;
+        return $res->getExitCode();
     }
 }
