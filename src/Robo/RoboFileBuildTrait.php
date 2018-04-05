@@ -93,7 +93,7 @@ trait RoboFileBuildTrait
    * ./robo shippable:build frontend --release                                                              // build frontend project at default revision (tip of "dev" branch)
    * ./robo shippable:build api --release                                                                   // build api project (results in api & importer images)
    *
-   * http://docs.shippable.com/api/overview/
+   * http://docs.shippable.com/platform/api/api-overview/
    */
     public function shippableBuild($imageOrProjectName, $opts = ['release' => false, 'branch' => null, 'dry-run' => false]) {
         $callShippable = function ($projectId, $buildProject, $globalEnvs) use ($opts) {
@@ -111,7 +111,8 @@ trait RoboFileBuildTrait
             'Content-Type: application/json',
             ];
 
-            $globalEnvJson = "{\"globalEnv\": ${globalEnvs}}";
+            $bodyJson = "{\"globalEnv\": ${globalEnvs}, \"branchName\": \"dirty\"}";   // !! branchName here refers to the branch of the `docker-image` repo and not the intended build branch of the target buildable project
+            $this->say("body: ${bodyJson}");
 
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -119,7 +120,7 @@ trait RoboFileBuildTrait
             curl_setopt(
                 $ch,
                 CURLOPT_POSTFIELDS,
-                $globalEnvJson
+                $bodyJson
             );
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
@@ -128,12 +129,10 @@ trait RoboFileBuildTrait
                 if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
                     throw new \RuntimeException('Could not json decode the response or imvalid key used. Raw: '.Util::consolePrint($rawRes));
                 }
-                $this->say("Shippable build triggered at https://app.shippable.com/bitbucket/alanpartridge/${buildProject}/runs/{$res['runNumber']}/1/console");
+                $this->say("Shippable build triggered at https://app.shippable.com/shippable/elmpp/${buildProject}/runs/{$res['runNumber']}/1/console");
             }
 
-            if ($globalEnvs) {
-                $this->say("globalEnv: ${globalEnvJson}");
-            }
+            $this->say("body: ${bodyJson}");
             curl_close($ch);
         };
 
