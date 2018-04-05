@@ -21,7 +21,7 @@ trait RoboFileTestTrait
         $coll = $this->collectionBuilder();
         foreach ($testSuite as $aSuite) {
             $coll
-            ->taskPhpUnit('time ./vendor/bin/phpunit')
+            ->taskPhpUnit('./vendor/bin/phpunit')
             ->option('testsuite', $aSuite)
             ->printOutput(true)
             ;
