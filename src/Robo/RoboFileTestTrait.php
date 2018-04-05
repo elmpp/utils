@@ -43,7 +43,7 @@ trait RoboFileTestTrait
         }
         $res = $coll->run();
         $this->say("Total time: (s)/(m) " . round($res->getExecutionTime(), 2) . " / " . round(($res->getExecutionTime() / 60), 2));
-      // explicitly return 0 - Robo 1.1 expects this now seemingly on success
+        return $res;
     }
 
     public function testBootstrap($env = 'test') {
