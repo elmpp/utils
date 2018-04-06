@@ -41,8 +41,7 @@ trait RoboFileTrait
     }
 
     protected function systemProcessGrep($egrep, $killOrIgnore = false) {
-        $processId = system("ps -ef | egrep -i '${egrep}' | awk '{print $2}'");      // http://stackoverflow.com/a/3510850/2968327
-        $processId = intval(trim($processId));
+        $processId = intval(trim(system("ps -ef | egrep -i '${egrep}' | awk '{print $2}'")));      // http://stackoverflow.com/a/3510850/2968327
 
         if ($processId != 0) {
             if (is_null($killOrIgnore)) {
@@ -50,10 +49,11 @@ trait RoboFileTrait
             }
             if ($killOrIgnore !== false) {
                 $this->say("Found existing process for grep ${egrep}");
-                $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  // http://stackoverflow.com/a/3510850/2968327
-                ->printOutput(true)
-                ->run()
-                ;
+                posix_kill($processId, 15);
+//                $this->taskExec("kill $(ps -ef | egrep -i '${egrep}' | awk '{print $2}')")  // http://stackoverflow.com/a/3510850/2968327
+//                ->printOutput(true)
+//                ->run()
+//                ;
                 sleep(2);
             } else {
                 throw new TaskException($this, "Process grepped via '${egrep}' is already running at process(es) id: ${processId}");

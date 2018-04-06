@@ -27,7 +27,7 @@ trait RoboFileWiremockTrait
     public static function getPHPUnitSuitesByIndex(Int $index = 0): array {
         $map = [
         0 => [
-          'nofixtures', // doesn't have data dependencies
+//          'nofixtures', // doesn't have data dependencies
           'integration_0_postStatic',
           'integration_0_postIntegration',
           'integration_0_postIntegrationStats',
