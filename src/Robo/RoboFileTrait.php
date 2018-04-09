@@ -43,7 +43,7 @@ trait RoboFileTrait
     protected function systemProcessGrep($egrep, $killOrIgnore = false) {
         $processId = intval(trim(system("ps -ef | egrep -i '${egrep}' | awk '{print $2}'")));      // http://stackoverflow.com/a/3510850/2968327
 
-        if ($processId != 0) {
+        if ($processId !== 0) {
             if (is_null($killOrIgnore)) {
                 return;
             }

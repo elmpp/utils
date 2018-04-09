@@ -95,7 +95,7 @@ trait RoboFileWiremockTrait
 
         if ($background) {
             $coll
-            ->background()
+//            ->background()
 //            ->idleTimeout(2)
             ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
 //            ->rawArg('&>')     // don't know why need to force the true now with robo but whatevs
@@ -103,6 +103,8 @@ trait RoboFileWiremockTrait
         }
         $coll->run();
         sleep(5); // required!!
+
+        $this->_exec('ps -ef | egrep -i [w]iremock');
 
         $this->stopOnFail($currentStopOnFail);
     }
