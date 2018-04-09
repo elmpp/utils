@@ -97,14 +97,14 @@ trait RoboFileWiremockTrait
             $coll
             ->background() // required to stop hung test:Integration etc
 //            ->idleTimeout(2)
-//            ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
+            ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
 //            ->rawArg('&>')     // don't know why need to force the true now with robo but whatevs
             ;
         }
         $coll->run();
         sleep(5); // required!!
 
-        $this->_exec('ps -ef | egrep iremock');
+        $this->_exec('ps -ef');
 
         $this->stopOnFail($currentStopOnFail);
     }
