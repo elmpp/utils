@@ -101,7 +101,7 @@ trait RoboFileWiremockTrait
 //            ->rawArg('&>')     // don't know why need to force the true now with robo but whatevs
             ;
         }
-        @$coll->run();
+        $coll->run();
         sleep(5); // required!!
 
         $this->stopOnFail($currentStopOnFail);
