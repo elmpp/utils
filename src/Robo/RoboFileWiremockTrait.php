@@ -104,7 +104,7 @@ trait RoboFileWiremockTrait
         $coll->run();
         sleep(5); // required!!
 
-        $this->_exec('ps -ef');
+        $this->_exec('ps -ef | egrep iremock');
 
         $this->stopOnFail($currentStopOnFail);
     }
