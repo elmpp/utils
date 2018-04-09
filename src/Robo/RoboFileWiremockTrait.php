@@ -96,8 +96,8 @@ trait RoboFileWiremockTrait
         if ($background) {
             $coll
             ->background() // required to stop hung test:Integration etc
-//            ->idleTimeout(2)
-//            ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
+            ->idleTimeout(2)
+            ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
 //            ->rawArg('&>')     // don't know why need to force the true now with robo but whatevs
             ;
         }
