@@ -20,7 +20,7 @@ trait RoboFileTestTrait
       /** @var \Robo\Collection\CollectionBuilder $coll */
         $coll = $this->collectionBuilder();
         foreach ($testSuite as $aSuite) {
-            $this->_exec('pgrep iremock');
+            $this->_exec('pgrep iremock || true');
             $coll
             ->taskPhpUnit('./vendor/bin/phpunit')
             ->option('testsuite', $aSuite)
