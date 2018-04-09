@@ -97,7 +97,8 @@ trait RoboFileWiremockTrait
             $coll
             ->background()
             ->idleTimeout(2)
-            ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
+//            ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
+            ->rawArg('&>')     // don't know why need to force the true now with robo but whatevs
             ;
         }
         @$coll->run();
