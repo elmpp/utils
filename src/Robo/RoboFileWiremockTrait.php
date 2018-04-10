@@ -49,7 +49,9 @@ trait RoboFileWiremockTrait
    *
    * @return string
    */
-    protected static function getWiremockDataDir($dir = 'standard') {
+    protected static function getWiremockDataDir($dir = null) {
+
+        $dir = $dir ?: 'standard';
 
         $dir = Util::getProjectRoot().'/etc/wiremock/'.$dir;
         if (!is_dir($dir)) {
