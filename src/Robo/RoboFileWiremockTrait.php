@@ -49,10 +49,13 @@ trait RoboFileWiremockTrait
    *
    * @return string
    */
-    protected static function getWiremockDataDir($dir = null) {
-        $dir = $dir ?: 'standard';
+    protected static function getWiremockDataDir($dir = 'standard') {
 
-        return Util::getProjectRoot().'/etc/wiremock/'.$dir;
+        $dir = Util::getProjectRoot().'/etc/wiremock/'.$dir;
+        if (!is_dir($dir)) {
+            throw new \InvalidArgumentException("Invalid Wiremock data directory: $dir");
+        }
+        return $dir;
     }
 
     protected static function getWiremockJarFile() {
