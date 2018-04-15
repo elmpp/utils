@@ -129,7 +129,7 @@ trait RoboFileBuildTrait
                 if (!($res = json_decode($rawRes, true)) || !isset($res['runId'])) {
                     throw new \RuntimeException('Could not json decode the response or imvalid key used. Raw: '.Util::consolePrint($rawRes));
                 }
-                $this->say("Shippable build triggered at https://app.shippable.com/shippable/elmpp/${buildProject}/runs/{$res['runNumber']}/1/console");
+                $this->say("Shippable build triggered at https://app.shippable.com/github/elmpp/${buildProject}/runs/{$res['runNumber']}/1/console");
             }
 
             $this->say("body: ${bodyJson}");
