@@ -11,13 +11,32 @@ use Robo\Exception\TaskException;
 trait RoboFileWiremockTrait
 {
   /**
-   * Convenience method for forming the namespace name. Used in lieu of constants (not allowed in traits)
+   * Our wiremock data will be siloed into "namespaces". This maps the numerical indexes to
+   * the data directory holding the wiremock fixtures files
    */
-    public static function getNamespaceByIndex($index = 0) {
+  public static function getDataDirByIndex(Int $index = 0): String {
       // 0 is considered default and maps to the "standard" namespace
         $map = [
         0 => 'standard',
         1 => '1--football--arsenal-v-leicester',
+        ];
+
+        return $map[$index];
+    }
+
+    public static function getPHPUnitSuitesByIndex(Int $index = 0): array {
+        $map = [
+        0 => [
+          'nofixtures', // doesn't have data dependencies
+          'integration_0_postStatic',
+          'integration_0_postIntegration',
+          'integration_0_postIntegrationStats',
+          'integration_0_postIntegrationApi',
+          'integration_0_multipleCategory1',
+        ],
+        1 => [
+          'integration_1_postIntegrationStats',
+        ],
         ];
 
         return $map[$index];
@@ -31,9 +50,14 @@ trait RoboFileWiremockTrait
    * @return string
    */
     protected static function getWiremockDataDir($dir = null) {
+
         $dir = $dir ?: 'standard';
 
-        return Util::getProjectRoot().'/etc/wiremock/'.$dir;
+        $dir = Util::getProjectRoot().'/etc/wiremock/'.$dir;
+        if (!is_dir($dir)) {
+            throw new \InvalidArgumentException("Invalid Wiremock data directory: $dir");
+        }
+        return $dir;
     }
 
     protected static function getWiremockJarFile() {
@@ -76,12 +100,13 @@ trait RoboFileWiremockTrait
 
         if ($background) {
             $coll
-            ->background()
+            ->background() // required to stop hung test:Integration etc
             ->idleTimeout(2)
             ->rawArg('&> /tmp/wiremock || true')     // don't know why need to force the true now with robo but whatevs
+//            ->rawArg('&>')     // don't know why need to force the true now with robo but whatevs
             ;
         }
-        @$coll->run();
+        $coll->run();
         sleep(5); // required!!
 
         $this->stopOnFail($currentStopOnFail);

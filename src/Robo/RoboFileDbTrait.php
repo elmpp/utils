@@ -112,7 +112,7 @@ trait RoboFileDbTrait
         ->option('env', $env)
         ->rawArg('load')
         ->rawArg($filename)
-        ->printOutput(true)
+        ->printOutput(false)
         ->run()
         ;
     }

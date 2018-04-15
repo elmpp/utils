@@ -20,6 +20,7 @@ trait RoboFileTestTrait
       /** @var \Robo\Collection\CollectionBuilder $coll */
         $coll = $this->collectionBuilder();
         foreach ($testSuite as $aSuite) {
+
             $coll
             ->taskPhpUnit('./vendor/bin/phpunit')
             ->option('testsuite', $aSuite)
@@ -41,8 +42,9 @@ trait RoboFileTestTrait
                 $coll->option('debug');
             }
         }
-        $coll->run();
-      // explicitly return 0 - Robo 1.1 expects this now seemingly on success
+        $res = $coll->run();
+        $this->say("Total time: (s)/(m) " . round($res->getExecutionTime(), 2) . " / " . round(($res->getExecutionTime() / 60), 2));
+        return $res->getExitCode();
     }
 
     public function testBootstrap($env = 'test') {
@@ -76,27 +78,6 @@ trait RoboFileTestTrait
         ->run()
         ;
 
-        return $res;
-    }
-
-  /**
-   * Runs the selenium tests
-   * These realised as node [nightwatch] scripts
-   */
-    protected function doTestSeleniumQuick($platform = 'local') {
-      // the "partridge/testing" composer package should have been pulled in by composer
-        $testingDir = $this->getCurrentProjectDir().'/vendor/partridge/testing';
-
-        $res = $this->collectionBuilder()
-        ->taskExec('npm install')
-        ->dir($testingDir)
-        ->printOutput(true)
-        ->taskExec("npm run quick:${platform}")
-        ->dir($testingDir)
-        ->printOutput(true)
-        ->run()
-        ;
-
-        return $res;
+        return $res->getExitCode();
     }
 }
